@@ -1,0 +1,2043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RATIONAL INTONATION EXPLORER</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #fff;
+            color: #000;
+            padding: 20px;
+            line-height: 1.6;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: clamp(1.5rem, 5vw, 2.5rem);
+            border: 3px solid #000;
+            padding: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
+        h2 {
+            font-size: clamp(1.2rem, 4vw, 1.8rem);
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+            margin: 30px 0 15px 0;
+        }
+
+        .control-group {
+            border: 2px solid #000;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            font-size: clamp(0.9rem, 3vw, 1rem);
+        }
+
+        input[type="number"],
+        input[type="text"] {
+            width: 100%;
+            background: #fff;
+            border: 2px solid #000;
+            color: #000;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 40px;
+            background: transparent;
+            margin-bottom: 10px;
+            cursor: pointer;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-track {
+            width: 100%;
+            height: 8px;
+            background: #000;
+            border: 2px solid #000;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 30px;
+            width: 30px;
+            background: #000;
+            cursor: pointer;
+            border: 2px solid #000;
+        }
+
+        input[type="range"]::-moz-range-track {
+            width: 100%;
+            height: 8px;
+            background: #000;
+            border: 2px solid #000;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            height: 26px;
+            width: 26px;
+            background: #000;
+            cursor: pointer;
+            border: 2px solid #000;
+            border-radius: 0;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #666;
+        }
+
+        input[type="range"]:focus::-webkit-slider-thumb {
+            border-color: #666;
+        }
+
+        input[type="range"]:focus::-moz-range-thumb {
+            border-color: #666;
+        }
+
+        .piano-reference {
+            font-size: clamp(0.75rem, 2.5vw, 0.85rem);
+            opacity: 0.7;
+            margin-top: 5px;
+            padding: 10px;
+            border-left: 2px solid #000;
+        }
+
+        .current-value {
+            font-size: clamp(0.85rem, 3vw, 0.95rem);
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            background: #f0f0f0;
+            border: 2px solid #000;
+            font-weight: bold;
+        }
+
+        .current-value-label {
+            opacity: 0.6;
+            font-weight: normal;
+        }
+
+        input.invalid {
+            border-color: #f00;
+            background: #ffe0e0;
+        }
+
+        .validation-message {
+            color: #f00;
+            font-size: 0.85rem;
+            margin-top: -5px;
+            margin-bottom: 10px;
+            display: none;
+        }
+
+        .validation-message.show {
+            display: block;
+        }
+
+        button {
+            background: #000;
+            color: #fff;
+            border: none;
+            padding: 15px 25px;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(0.9rem, 3vw, 1.1rem);
+            font-weight: bold;
+            cursor: pointer;
+            margin: 5px 5px 5px 0;
+            width: 100%;
+            max-width: 200px;
+            transition: all 0.1s;
+        }
+
+        button:hover {
+            background: #333;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .tone-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .tone-button {
+            background: #fff;
+            color: #000;
+            border: 2px solid #000;
+            padding: 15px 10px;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(0.75rem, 2.5vw, 0.9rem);
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.1s;
+            width: 100%;
+            max-width: none;
+        }
+
+        .tone-button:hover {
+            background: #000;
+            color: #fff;
+        }
+
+        .tone-button.playing {
+            background: #333;
+            color: #fff;
+            border-color: #333;
+        }
+
+        .freq-display {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .ratio-display {
+            display: block;
+            font-size: 0.85em;
+            opacity: 0.7;
+        }
+
+        .interval-name {
+            display: block;
+            font-size: 0.75em;
+            opacity: 0.6;
+            font-style: italic;
+            margin-top: 2px;
+        }
+
+        .pitch-controls {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #ccc;
+        }
+
+        .pitch-control {
+            margin-bottom: 8px;
+        }
+
+        .pitch-control:last-child {
+            margin-bottom: 0;
+        }
+
+        .pitch-control label {
+            display: block;
+            font-size: clamp(0.7rem, 2vw, 0.75rem);
+            margin-bottom: 4px;
+            opacity: 0.8;
+        }
+
+        .pitch-control input[type="range"] {
+            width: 100%;
+            height: 24px;
+            background: transparent;
+            cursor: pointer;
+            -webkit-appearance: none;
+        }
+
+        .pitch-control input[type="range"]::-webkit-slider-track {
+            width: 100%;
+            height: 4px;
+            background: #666;
+            border: 1px solid #666;
+        }
+
+        .pitch-control input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            background: #000;
+            cursor: pointer;
+            border: 1px solid #000;
+        }
+
+        .pitch-control input[type="range"]::-moz-range-track {
+            width: 100%;
+            height: 4px;
+            background: #666;
+            border: 1px solid #666;
+        }
+
+        .pitch-control input[type="range"]::-moz-range-thumb {
+            height: 14px;
+            width: 14px;
+            background: #000;
+            cursor: pointer;
+            border: 1px solid #000;
+            border-radius: 0;
+        }
+
+        .pitch-control .value-inline {
+            font-size: clamp(0.65rem, 1.8vw, 0.7rem);
+            opacity: 0.7;
+        }
+
+        .research {
+            border: 2px solid #000;
+            padding: 15px;
+            margin-top: 40px;
+            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+        }
+
+        .research p {
+            margin-bottom: 15px;
+        }
+
+        .research ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        .research li {
+            margin-bottom: 10px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .research li:before {
+            content: ">";
+            position: absolute;
+            left: 0;
+        }
+
+        .citation {
+            font-size: 0.85em;
+            opacity: 0.7;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #000;
+        }
+
+        /* MIDI Controller Styles */
+        .midi-status {
+            padding: 10px 15px;
+            border: 2px solid #000;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .midi-status.connected {
+            background: #e8f5e9;
+        }
+
+        .midi-status.disconnected {
+            background: #fff;
+        }
+
+        .midi-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ccc;
+            border: 2px solid #000;
+        }
+
+        .midi-indicator.connected {
+            background: #4caf50;
+        }
+
+        .midi-indicator.activity {
+            background: #ff9800;
+        }
+
+        .midi-device-select {
+            width: 100%;
+            background: #fff;
+            border: 2px solid #000;
+            color: #000;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        .midi-fader-display {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 8px;
+            margin-top: 15px;
+            padding: 15px;
+            background: #f5f5f5;
+            border: 2px solid #000;
+        }
+
+        .fader-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .fader-label {
+            font-size: 0.7rem;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .fader-bar {
+            width: 20px;
+            height: 80px;
+            background: #ddd;
+            border: 1px solid #000;
+            position: relative;
+        }
+
+        .fader-bar-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: #000;
+            transition: height 0.05s;
+        }
+
+        .fader-value {
+            font-size: 0.65rem;
+            opacity: 0.7;
+        }
+
+        .midi-mapping-info {
+            font-size: 0.8rem;
+            margin-top: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+            border-left: 3px solid #000;
+        }
+
+        .midi-mapping-info code {
+            background: #eee;
+            padding: 2px 5px;
+            font-size: 0.75rem;
+        }
+
+        /* Dark mode */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: #000;
+                color: #fff;
+            }
+
+            h1 {
+                border-color: #fff;
+            }
+
+            h2 {
+                border-bottom-color: #fff;
+            }
+
+            .control-group {
+                border-color: #fff;
+            }
+
+            input[type="number"],
+            input[type="text"] {
+                background: #000;
+                border-color: #fff;
+                color: #fff;
+            }
+
+            input[type="range"]::-webkit-slider-track {
+                background: #fff;
+                border-color: #fff;
+            }
+
+            input[type="range"]::-webkit-slider-thumb {
+                background: #fff;
+                border-color: #fff;
+            }
+
+            input[type="range"]::-moz-range-track {
+                background: #fff;
+                border-color: #fff;
+            }
+
+            input[type="range"]::-moz-range-thumb {
+                background: #fff;
+                border-color: #fff;
+            }
+
+            input:focus {
+                border-color: #999;
+            }
+
+            input[type="range"]:focus::-webkit-slider-thumb {
+                border-color: #999;
+            }
+
+            input[type="range"]:focus::-moz-range-thumb {
+                border-color: #999;
+            }
+
+            .piano-reference {
+                border-left-color: #fff;
+            }
+
+            button {
+                background: #fff;
+                color: #000;
+            }
+
+            button:hover {
+                background: #ccc;
+            }
+
+            .tone-button {
+                background: #000;
+                color: #fff;
+                border-color: #fff;
+            }
+
+            .tone-button:hover {
+                background: #fff;
+                color: #000;
+            }
+
+            .tone-button.playing {
+                background: #ccc;
+                color: #000;
+                border-color: #ccc;
+            }
+
+            .research {
+                border-color: #fff;
+            }
+
+            .citation {
+                border-top-color: #fff;
+            }
+
+            .current-value {
+                background: #1a1a1a;
+                border-color: #fff;
+            }
+
+            input.invalid {
+                border-color: #f00;
+                background: #300;
+            }
+
+            select {
+                background: #000 !important;
+                border-color: #fff !important;
+                color: #fff !important;
+            }
+
+            select option {
+                background: #000;
+                color: #fff;
+            }
+
+            .pitch-controls {
+                border-top-color: #666;
+            }
+
+            .pitch-control input[type="range"]::-webkit-slider-track {
+                background: #999;
+                border-color: #999;
+            }
+
+            .pitch-control input[type="range"]::-webkit-slider-thumb {
+                background: #fff;
+                border-color: #fff;
+            }
+
+            .pitch-control input[type="range"]::-moz-range-track {
+                background: #999;
+                border-color: #999;
+            }
+
+            .pitch-control input[type="range"]::-moz-range-thumb {
+                background: #fff;
+                border-color: #fff;
+            }
+
+            .midi-status {
+                background: #1a1a1a;
+                border-color: #fff;
+            }
+
+            .midi-status.connected {
+                background: #1a3a1a;
+            }
+
+            .midi-fader-display {
+                background: #1a1a1a;
+            }
+
+            .fader-bar-fill {
+                background: #fff;
+            }
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            .control-group {
+                padding: 10px;
+            }
+
+            button {
+                max-width: none;
+            }
+
+            .tone-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>RATIONAL INTONATION EXPLORER</h1>
+
+        <div class="control-group">
+            <label for="rootHz">ROOT NOTE (Hz)</label>
+            <div class="current-value">
+                <span class="current-value-label">CURRENT: </span><span id="currentRootHz">440</span> Hz
+            </div>
+            <input type="number" id="rootHz" value="440" step="0.01" min="20" max="4000" placeholder="Type and press Enter to apply">
+            <div class="validation-message" id="rootHzError">Invalid frequency value</div>
+            <div class="piano-reference">
+                PIANO REFERENCE:<br>
+                A4 = 440 Hz (concert pitch)<br>
+                C4 (middle C) = 261.63 Hz<br>
+                A3 = 220 Hz<br>
+                C5 = 523.25 Hz<br>
+                E4 = 329.63 Hz<br>
+                G4 = 392.00 Hz<br>
+                <em>Press Enter to apply changes</em>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label for="ratio">RATIO (decimal or fraction)</label>
+            <div class="current-value">
+                <span class="current-value-label">CURRENT: </span><span id="currentRatio">1.5</span>
+            </div>
+            <input type="text" id="ratio" value="1.5" placeholder="Type and press Enter to apply">
+            <div class="validation-message" id="ratioError">Invalid ratio value</div>
+            <div class="piano-reference">
+                COMMON RATIOS:<br>
+                3/2 (1.5) = perfect fifth<br>
+                5/4 (1.25) = major third<br>
+                4/3 (1.333...) = perfect fourth<br>
+                9/8 (1.125) = major second<br>
+                <em>Press Enter to apply changes</em>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label for="fadeTime">FADE IN/OUT TIME</label>
+            <div class="current-value">
+                <span class="current-value-label">CURRENT: </span><span id="currentFadeTime">100</span> ms
+            </div>
+            <input type="range" id="fadeTime" min="0" max="10000" value="100" step="10">
+            <div class="piano-reference">
+                Controls how long tones take to fade in when pressed and fade out when released.<br>
+                Range: 0ms (instant) to 10000ms (10 seconds)<br>
+                Default: 100ms
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label for="masterAmplitude">MASTER AMPLITUDE (ALL PITCHES)</label>
+            <div class="current-value">
+                <span class="current-value-label">CURRENT: </span><span id="masterAmplitudeValue">0.30</span>
+            </div>
+            <input type="range" id="masterAmplitude" min="0" max="1" step="0.01" value="0.3">
+            <div class="piano-reference">
+                Controls the overall volume for all generated tones.<br>
+                Range: 0.00 (silent) to 1.00 (maximum)<br>
+                Default: 0.30
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label for="modeSelect">JUST INTONATION MODE</label>
+            <select id="modeSelect" style="width: 100%; background: #fff; border: 2px solid #000; color: #000; padding: 12px; font-family: 'Courier New', monospace; font-size: 16px; margin-bottom: 10px; cursor: pointer;">
+                <option value="free">Free Exploration (m*A + n*B)</option>
+                <option value="5-limit-major">5-Limit Just Major Scale</option>
+                <option value="5-limit-minor">5-Limit Just Minor Scale</option>
+                <option value="7-limit-dorian">7-Limit Dorian Mode</option>
+                <option value="7-limit-lydian">7-Limit Lydian Mode</option>
+                <option value="11-limit-neutral">11-Limit Neutral Mode</option>
+                <option value="13-limit-extended">13-Limit Extended Mode</option>
+            </select>
+            <div class="piano-reference">
+                Select a just intonation mode to explore different harmonic systems.<br>
+                <strong>5-limit</strong>: Traditional just intonation (primes 2, 3, 5)<br>
+                <strong>7-limit</strong>: Septimal intervals with distinctive "blue note" qualities<br>
+                <strong>11-limit</strong>: Extended harmony with neutral intervals (used by Kali Malone)<br>
+                <strong>13-limit</strong>: Extremely subtle microtonal inflections (used by Ben Johnston)
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>MICHIGAN XVI FADERBANK</label>
+            <div class="midi-status disconnected" id="midiStatus">
+                <span class="midi-indicator" id="midiIndicator"></span>
+                <span id="midiStatusText">MIDI not available</span>
+            </div>
+            <select class="midi-device-select" id="midiDeviceSelect" disabled>
+                <option value="">-- Select MIDI Device --</option>
+            </select>
+            <div class="midi-fader-display" id="midiFaderDisplay">
+                <!-- Faders 1-8 -->
+                <div class="fader-column">
+                    <div class="fader-label">1<br>AMP</div>
+                    <div class="fader-bar"><div class="fader-bar-fill" id="fader-0" style="height: 0%"></div></div>
+                    <div class="fader-value" id="fader-val-0">0</div>
+                </div>
+                <div class="fader-column">
+                    <div class="fader-label">2<br>P1</div>
+                    <div class="fader-bar"><div class="fader-bar-fill" id="fader-1" style="height: 0%"></div></div>
+                    <div class="fader-value" id="fader-val-1">0</div>
+                </div>
+                <div class="fader-column">
+                    <div class="fader-label">3<br>P2</div>
+                    <div class="fader-bar"><div class="fader-bar-fill" id="fader-2" style="height: 0%"></div></div>
+                    <div class="fader-value" id="fader-val-2">0</div>
+                </div>
+                <div class="fader-column">
+                    <div class="fader-label">4<br>P3</div>
+                    <div class="fader-bar"><div class="fader-bar-fill" id="fader-3" style="height: 0%"></div></div>
+                    <div class="fader-value" id="fader-val-3">0</div>
+                </div>
+                <div class="fader-column">
+                    <div class="fader-label">5<br>P4</div>
+                    <div class="fader-bar"><div class="fader-bar-fill" id="fader-4" style="height: 0%"></div></div>
+                    <div class="fader-value" id="fader-val-4">0</div>
+                </div>
+                <div class="fader-column">
+                    <div class="fader-label">6<br>P5</div>
+                    <div class="fader-bar"><div class="fader-bar-fill" id="fader-5" style="height: 0%"></div></div>
+                    <div class="fader-value" id="fader-val-5">0</div>
+                </div>
+                <div class="fader-column">
+                    <div class="fader-label">7<br>P6</div>
+                    <div class="fader-bar"><div class="fader-bar-fill" id="fader-6" style="height: 0%"></div></div>
+                    <div class="fader-value" id="fader-val-6">0</div>
+                </div>
+                <div class="fader-column">
+                    <div class="fader-label">8<br>P7</div>
+                    <div class="fader-bar"><div class="fader-bar-fill" id="fader-7" style="height: 0%"></div></div>
+                    <div class="fader-value" id="fader-val-7">0</div>
+                </div>
+            </div>
+            <div class="midi-fader-display" id="midiFaderDisplay2" style="margin-top: 8px;">
+                <!-- Faders 9-16 -->
+                <div class="fader-column">
+                    <div class="fader-label">9<br>P8</div>
+                    <div class="fader-bar"><div class="fader-bar-fill" id="fader-8" style="height: 0%"></div></div>
+                    <div class="fader-value" id="fader-val-8">0</div>
+                </div>
+                <div class="fader-column">
+                    <div class="fader-label">10<br>P9</div>
+                    <div class="fader-bar"><div class="fader-bar-fill" id="fader-9" style="height: 0%"></div></div>
+                    <div class="fader-value" id="fader-val-9">0</div>
+                </div>
+                <div class="fader-column">
+                    <div class="fader-label">11<br>P10</div>
+                    <div class="fader-bar"><div class="fader-bar-fill" id="fader-10" style="height: 0%"></div></div>
+                    <div class="fader-value" id="fader-val-10">0</div>
+                </div>
+                <div class="fader-column">
+                    <div class="fader-label">12<br>FADE</div>
+                    <div class="fader-bar"><div class="fader-bar-fill" id="fader-11" style="height: 0%"></div></div>
+                    <div class="fader-value" id="fader-val-11">0</div>
+                </div>
+                <div class="fader-column">
+                    <div class="fader-label">13<br>ROOT</div>
+                    <div class="fader-bar"><div class="fader-bar-fill" id="fader-12" style="height: 0%"></div></div>
+                    <div class="fader-value" id="fader-val-12">0</div>
+                </div>
+                <div class="fader-column">
+                    <div class="fader-label">14<br>---</div>
+                    <div class="fader-bar"><div class="fader-bar-fill" id="fader-13" style="height: 0%"></div></div>
+                    <div class="fader-value" id="fader-val-13">0</div>
+                </div>
+                <div class="fader-column">
+                    <div class="fader-label">15<br>---</div>
+                    <div class="fader-bar"><div class="fader-bar-fill" id="fader-14" style="height: 0%"></div></div>
+                    <div class="fader-value" id="fader-val-14">0</div>
+                </div>
+                <div class="fader-column">
+                    <div class="fader-label">16<br>---</div>
+                    <div class="fader-bar"><div class="fader-bar-fill" id="fader-15" style="height: 0%"></div></div>
+                    <div class="fader-value" id="fader-val-15">0</div>
+                </div>
+            </div>
+            <div class="midi-mapping-info">
+                <strong>FADER MAPPING:</strong><br>
+                <code>1</code> Master Amplitude |
+                <code>2-11</code> Pitch Amplitudes (P1-P10) |
+                <code>12</code> Fade Time |
+                <code>13</code> Root Frequency<br>
+                <em>Michigan XVI sends CC 0-15 or CC 32-47 depending on configuration</em>
+            </div>
+        </div>
+
+        <h2>GENERATED TONES</h2>
+        <div id="audioWarning" style="display: none; background: #ffeb3b; color: #000; padding: 15px; margin-bottom: 15px; border: 2px solid #000;">
+            <strong>⚠️ AUDIO INITIALIZATION REQUIRED</strong><br>
+            Click the button below to enable audio playback (required on iOS/Safari):
+            <br><br>
+            <button id="initAudioBtn" style="background: #000; color: #fff;">INITIALIZE AUDIO</button>
+        </div>
+        <p style="margin-bottom: 15px;">Click any tone to play it. Display shows integer ratio relative to root frequency.</p>
+        <div class="tone-grid" id="toneGrid"></div>
+
+        <div class="research">
+            <h2>CATHERINE LAMB & RATIONAL INTONATION</h2>
+
+            <p>Catherine Lamb's compositional practice is deeply rooted in <strong>just intonation</strong> and the exploration of microtonal relationships. Her work focuses on creating rich harmonic environments through precise frequency ratios.</p>
+
+            <p><strong>KEY RATIOS IN LAMB'S PRACTICE:</strong></p>
+
+            <ul>
+                <li><strong>Septimal ratios (7-limit)</strong>: Ratios involving the prime number 7, such as 7/4 (≈1.75), 8/7 (≈1.143), 7/5 (≈1.4), and 7/6 (≈1.167). These create distinctive "blue note" qualities and are central to Lamb's harmonic language.</li>
+
+                <li><strong>Undertone series</strong>: Lamb frequently employs undertone relationships (subharmonic ratios), exploring divisions of a fundamental frequency rather than multiples. For example, ratios like 1/2, 1/3, 1/4 of a root frequency.</li>
+
+                <li><strong>Secondary beats and difference tones</strong>: Her work explores the acoustic phenomena that emerge from rational intervals, including combination tones at frequencies equal to the difference or sum of two sounding tones.</li>
+
+                <li><strong>Small integer ratios (5-limit)</strong>: Including 3/2 (perfect fifth), 5/4 (major third), 6/5 (minor third), 5/3 (major sixth) - the foundation of traditional just intonation.</li>
+
+                <li><strong>Extended ratios (11-limit and beyond)</strong>: Ratios involving primes 11 and 13, such as 11/8 (≈1.375), 11/9 (≈1.222), 13/8 (≈1.625), creating extremely subtle microtonal inflections.</li>
+            </ul>
+
+            <p><strong>COMPOSITIONAL CONTEXT:</strong></p>
+
+            <p>Lamb's compositions like "Prisma Interius" (2011-2013) and "Point/Wave" (2012) demonstrate extended duration pieces where slowly shifting rational intervals create evolving acoustic spaces. Her work is often situated within the Wandelweiser collective's aesthetic of extreme reduction and close listening.</p>
+
+            <h2>KALI MALONE & EXTENDED JUST INTONATION</h2>
+
+            <p>Kali Malone (b. 1994) is an American composer and organist whose work with extended just intonation systems represents a significant development in contemporary microtonal composition. Based in Stockholm, Malone implements unique tuning systems in minimalist form for analog and digital synthesis, often combined with acoustic instrumentation.</p>
+
+            <p><strong>11-LIMIT JUST INTONATION:</strong></p>
+
+            <p>Malone's 2022 album <em><a href="https://idealrecordings.bandcamp.com/album/living-torch" target="_blank">Living Torch</a></em> was composed in <strong>11-odd limit just intonation</strong>, representing a more complex tuning system that involves intervals of around a quartertone, giving exotic sonorities such as neutral thirds and sevenths. The 33-minute piece, presented in two movements, features a complex electroacoustic ensemble including trombone, bass clarinet, boîte à bourdon, sine wave generators, and Éliane Radigue's ARP 2500 synthesizer. The trombone and bass clarinet were recorded in meticulous individual parts to match each computer-generated sound wave, demonstrating the precision required for extended just intonation performance.</p>
+
+            <p><strong>MODAL STRUCTURES IN EXTENDED LIMITS:</strong></p>
+
+            <p>Malone's approach to just intonation extends beyond Catherine Lamb's primarily 7-limit practice into 11- and 13-limit territories. These extended prime limits allow for:</p>
+
+            <ul>
+                <li><strong>Neutral intervals (11-limit)</strong>: Ratios like 11/9 (neutral third) and 11/6 (neutral seventh) that exist between major and minor intervals, creating ambiguous harmonic spaces characteristic of Malone's work.</li>
+                <li><strong>Undecimal harmonies</strong>: The 11/8 ratio (undecimal tritone) provides an alternative to the traditional 7/5 septimal tritone, offering even more refined microtonal distinctions.</li>
+                <li><strong>Modal frameworks</strong>: Unlike equal temperament's fixed modal structures, just intonation modes in different prime limits create unique interval sequences that cannot be transposed without changing their harmonic character.</li>
+            </ul>
+
+            <p><strong>ORGAN TUNING & COMPOSITIONAL PRACTICE:</strong></p>
+
+            <p>Malone became interested in just intonation through Ellen Arkbro and Marcus Pal when they were studying with <a href="https://en.wikipedia.org/wiki/La_Monte_Young" target="_blank">La Monte Young</a>. She apprenticed with organ tuner Jan Börjeson and began playing the organ through the practice of tuning it. This hands-on approach to temperament and intonation directly informs her compositional work, where isolating and intonating individual pitches allows for greater compositional freedom. Her 2019 album <em><a href="https://idealrecordings.bandcamp.com/album/the-sacrificial-code" target="_blank">The Sacrificial Code</a></em> features nearly two hours of pipe organ compositions exploring justly tuned harmony and canonic structures.</p>
+
+            <p><strong>CONNECTION TO CATHERINE LAMB:</strong></p>
+
+            <p>Both Lamb and Malone share an approach to just intonation that emphasizes the perception of combination tones, difference tones, and the acoustic phenomena that emerge from precise rational relationships. While Lamb often works within 7-limit systems exploring the harmonic seventh and septimal intervals, Malone extends this practice into 11-limit and beyond, investigating the neutral intervals and quartertone inflections that these higher prime limits afford. Together, their work represents a continuum of contemporary just intonation practice from septimal harmony through extended microtonal systems.</p>
+
+            <div class="citation">
+                <strong>CITATIONS & REFERENCES:</strong><br><br>
+
+                <strong>[1]</strong> Lamb, Catherine. "Harmonic Space." In <em>The Open Space Magazine</em>, Issue 15, 2013. Discusses her approach to just intonation and spectral composition.<br><br>
+
+                <strong>[2]</strong> Gilmore, Bob. "Just Intonation: An Unfinished Revolution." Essay exploring contemporary just intonation practice including Lamb's work. Published in <em>The Ashgate Research Companion to Experimental Music</em>, 2009.<br><br>
+
+                <strong>[3]</strong> Pisaro, Michael. "Notes on Catherine Lamb's Music." In <em>Wandelweiser und so weiter</em>, Edition Wandelweiser Records, 2014. Analysis of Lamb's use of rational frequency relationships.<br><br>
+
+                <strong>[4]</strong> Lamb, Catherine. Program notes for "Prisma Interius VII" and other works. Available through Edition Wandelweiser and Another Timbre Records documentation.<br><br>
+
+                <strong>[5]</strong> Wannamaker, Robert. "The Spectral Music of Catherine Lamb and the Perception of Combination Tones." <em>Contemporary Music Review</em>, Vol. 37, No. 1-2, 2018, pp. 134-153. Academic analysis of her use of difference tones and rational intervals.<br><br>
+
+                <strong>[6]</strong> <a href="https://en.wikipedia.org/wiki/Kali_Malone" target="_blank">Kali Malone - Wikipedia</a>. Biographical information and overview of her work with just intonation and organ tuning.<br><br>
+
+                <strong>[7]</strong> <a href="https://www.tinymixtapes.com/features/kali-malone" target="_blank">Kali Malone Interview - Tiny Mix Tapes</a>. Discussion of her work with just intonation, apprenticeship with organ tuner Jan Börjeson, and studies with Ellen Arkbro and Marcus Pal.<br><br>
+
+                <strong>[8]</strong> <a href="https://idealrecordings.bandcamp.com/album/living-torch" target="_blank">Kali Malone - <em>Living Torch</em> (Ideal Recordings, 2022)</a>. Album composed in 11-odd limit just intonation, recorded at GRM studios in Paris 2020-2021.<br><br>
+
+                <strong>[9]</strong> <a href="https://idealrecordings.bandcamp.com/album/the-sacrificial-code" target="_blank">Kali Malone - <em>The Sacrificial Code</em> (Ideal Recordings, 2019)</a>. Nearly two hours of pipe organ compositions exploring justly tuned harmony and canonic structures.<br><br>
+
+                <strong>[10]</strong> <a href="https://en.wikipedia.org/wiki/Harry_Partch's_43-tone_scale" target="_blank">Harry Partch's 43-tone scale - Wikipedia</a>. Information on 11-limit just intonation systems and extended prime limits developed by Harry Partch.<br><br>
+
+                <strong>[11]</strong> <a href="https://en.wikipedia.org/wiki/Prime_limit" target="_blank">Limit (music) - Wikipedia</a>. Technical overview of prime limits in just intonation, including 5-, 7-, 11-, and 13-limit systems.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DON'T create AudioContext on page load - Safari iOS requires it to be created within user gesture
+        let audioContext = null;
+        let activeOscillators = new Map();
+        let audioInitialized = false;
+
+        // Store current applied values
+        let currentAppliedRootHz = 440;
+        let currentAppliedRatio = '1.5';
+        let fadeTimeMs = 100; // Default fade time in milliseconds
+        let pitchSettings = new Map(); // Store pan and amplitude for each pitch
+        let masterAmplitude = 0.3; // Master volume for all pitches
+
+        // Function to create/unlock audio context within user gesture
+        async function unlockAudio() {
+            // Create context within user gesture if it doesn't exist (critical for Safari iOS speakers)
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                console.log('AudioContext created within user gesture, state:', audioContext.state);
+
+                // Monitor state changes (for interrupted state on iOS)
+                audioContext.addEventListener('statechange', () => {
+                    console.log('AudioContext state changed to:', audioContext.state);
+                    if (audioContext.state === 'suspended' || audioContext.state === 'interrupted') {
+                        showAudioWarning();
+                    } else if (audioContext.state === 'running') {
+                        audioInitialized = true;
+                        hideAudioWarning();
+                    }
+                });
+
+                // iOS Safari unlock: play silent buffer to "warm up" the context
+                try {
+                    const buffer = audioContext.createBuffer(1, 1, 22050);
+                    const source = audioContext.createBufferSource();
+                    source.buffer = buffer;
+                    source.connect(audioContext.destination);
+                    source.start(0);
+                    console.log('Silent buffer played to unlock iOS audio');
+                } catch (err) {
+                    console.error('Failed to play unlock buffer:', err);
+                }
+            }
+
+            // Resume if suspended or interrupted - AWAIT this before continuing
+            if (audioContext.state === 'suspended' || audioContext.state === 'interrupted') {
+                try {
+                    await audioContext.resume();
+                    console.log('AudioContext resumed successfully, state:', audioContext.state);
+                    audioInitialized = true;
+                    hideAudioWarning();
+                } catch (err) {
+                    console.error('Failed to resume AudioContext:', err);
+                    showAudioWarning();
+                }
+            } else if (audioContext.state === 'running') {
+                console.log('AudioContext already running');
+                audioInitialized = true;
+                hideAudioWarning();
+            }
+        }
+
+        function showAudioWarning() {
+            document.getElementById('audioWarning').style.display = 'block';
+        }
+
+        function hideAudioWarning() {
+            document.getElementById('audioWarning').style.display = 'none';
+        }
+
+        // Check if we need to show the audio warning
+        function checkAudioState() {
+            // If no context created yet, we need user interaction
+            if (!audioContext && !audioInitialized) {
+                showAudioWarning();
+            } else if (audioContext && (audioContext.state === 'suspended' || audioContext.state === 'interrupted') && !audioInitialized) {
+                showAudioWarning();
+            }
+        }
+
+        function parseRatio(ratioStr) {
+            ratioStr = ratioStr.trim();
+            if (ratioStr.includes('/')) {
+                const [num, den] = ratioStr.split('/').map(s => parseFloat(s.trim()));
+                return num / den;
+            }
+            return parseFloat(ratioStr);
+        }
+
+        function gcd(a, b) {
+            a = Math.abs(Math.round(a));
+            b = Math.abs(Math.round(b));
+            while (b !== 0) {
+                const temp = b;
+                b = a % b;
+                a = temp;
+            }
+            return a;
+        }
+
+        function decimalToFraction(decimal, tolerance = 0.0001) {
+            // Handle simple cases
+            if (decimal === 1) return "1/1";
+
+            // Convert to fraction using continued fractions method
+            // with a maximum denominator to keep ratios manageable
+            let numerator = 1;
+            let denominator = 1;
+            let minError = Math.abs(decimal - 1);
+
+            // Try different denominators up to 100
+            for (let den = 1; den <= 100; den++) {
+                const num = Math.round(decimal * den);
+                const error = Math.abs(decimal - num / den);
+
+                if (error < minError) {
+                    minError = error;
+                    numerator = num;
+                    denominator = den;
+
+                    // If we found an exact match, stop
+                    if (error < tolerance) break;
+                }
+            }
+
+            // Simplify the fraction
+            const divisor = gcd(numerator, denominator);
+            numerator = numerator / divisor;
+            denominator = denominator / divisor;
+
+            return `${numerator}/${denominator}`;
+        }
+
+        function getIntervalName(ratioString) {
+            // Map of common interval ratios to their western music theory names
+            const intervals = {
+                '1/1': 'unison',
+                '16/15': 'minor second',
+                '25/24': 'minor second',
+                '9/8': 'major second',
+                '10/9': 'major second',
+                '6/5': 'minor third',
+                '5/4': 'major third',
+                '4/3': 'perfect fourth',
+                '45/32': 'tritone',
+                '64/45': 'tritone',
+                '7/5': 'tritone',
+                '3/2': 'perfect fifth',
+                '8/5': 'minor sixth',
+                '5/3': 'major sixth',
+                '16/9': 'minor seventh',
+                '9/5': 'minor seventh',
+                '15/8': 'major seventh',
+                '2/1': 'octave',
+                '3/1': 'octave + fifth',
+                '4/1': 'two octaves',
+                '5/2': 'two octaves + major third',
+                '3/4': 'perfect fourth (down)',
+                '2/3': 'perfect fifth (down)',
+                '4/5': 'major third (down)',
+                '5/6': 'minor third (down)',
+                '8/9': 'major second (down)',
+                '9/10': 'major second (down)',
+                '15/16': 'minor second (down)',
+                '7/4': 'harmonic seventh',
+                '8/7': 'septimal whole tone',
+                '7/6': 'septimal minor third',
+                '11/8': 'undecimal tritone',
+                '11/9': 'neutral third',
+                '11/6': 'neutral seventh',
+                '13/8': 'tridecimal sixth',
+                '13/12': 'tridecimal 2/3-tone'
+            };
+
+            return intervals[ratioString] || null;
+        }
+
+        // Define just intonation mode scales
+        function getModeRatios(mode) {
+            const modes = {
+                '5-limit-major': [
+                    { ratio: '1/1', name: 'root' },
+                    { ratio: '9/8', name: 'major second' },
+                    { ratio: '5/4', name: 'major third' },
+                    { ratio: '4/3', name: 'perfect fourth' },
+                    { ratio: '3/2', name: 'perfect fifth' },
+                    { ratio: '5/3', name: 'major sixth' },
+                    { ratio: '15/8', name: 'major seventh' },
+                    { ratio: '2/1', name: 'octave' }
+                ],
+                '5-limit-minor': [
+                    { ratio: '1/1', name: 'root' },
+                    { ratio: '9/8', name: 'major second' },
+                    { ratio: '6/5', name: 'minor third' },
+                    { ratio: '4/3', name: 'perfect fourth' },
+                    { ratio: '3/2', name: 'perfect fifth' },
+                    { ratio: '8/5', name: 'minor sixth' },
+                    { ratio: '9/5', name: 'minor seventh' },
+                    { ratio: '2/1', name: 'octave' }
+                ],
+                '7-limit-dorian': [
+                    { ratio: '1/1', name: 'root' },
+                    { ratio: '9/8', name: 'major second' },
+                    { ratio: '6/5', name: 'minor third' },
+                    { ratio: '4/3', name: 'perfect fourth' },
+                    { ratio: '3/2', name: 'perfect fifth' },
+                    { ratio: '8/5', name: 'minor sixth' },
+                    { ratio: '7/4', name: 'harmonic seventh' },
+                    { ratio: '2/1', name: 'octave' }
+                ],
+                '7-limit-lydian': [
+                    { ratio: '1/1', name: 'root' },
+                    { ratio: '9/8', name: 'major second' },
+                    { ratio: '5/4', name: 'major third' },
+                    { ratio: '7/5', name: 'septimal tritone' },
+                    { ratio: '3/2', name: 'perfect fifth' },
+                    { ratio: '5/3', name: 'major sixth' },
+                    { ratio: '7/4', name: 'harmonic seventh' },
+                    { ratio: '2/1', name: 'octave' }
+                ],
+                '11-limit-neutral': [
+                    { ratio: '1/1', name: 'root' },
+                    { ratio: '9/8', name: 'major second' },
+                    { ratio: '11/9', name: 'neutral third' },
+                    { ratio: '4/3', name: 'perfect fourth' },
+                    { ratio: '11/8', name: 'undecimal tritone' },
+                    { ratio: '3/2', name: 'perfect fifth' },
+                    { ratio: '11/6', name: 'neutral seventh' },
+                    { ratio: '2/1', name: 'octave' }
+                ],
+                '13-limit-extended': [
+                    { ratio: '1/1', name: 'root' },
+                    { ratio: '13/12', name: 'tridecimal 2/3-tone' },
+                    { ratio: '9/8', name: 'major second' },
+                    { ratio: '13/10', name: 'tridecimal minor third' },
+                    { ratio: '4/3', name: 'perfect fourth' },
+                    { ratio: '11/8', name: 'undecimal tritone' },
+                    { ratio: '3/2', name: 'perfect fifth' },
+                    { ratio: '13/8', name: 'tridecimal sixth' },
+                    { ratio: '7/4', name: 'harmonic seventh' },
+                    { ratio: '2/1', name: 'octave' }
+                ]
+            };
+            return modes[mode] || null;
+        }
+
+        async function playTone(frequency, button) {
+            // Create AudioContext synchronously in user gesture if it doesn't exist (critical for Safari/iOS)
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                console.log('AudioContext created synchronously in playTone, state:', audioContext.state);
+            }
+
+            // Attempt to unlock/resume audio on first interaction (Safari iOS requirement)
+            if (!audioInitialized || audioContext.state !== 'running') {
+                // Resume if suspended
+                if (audioContext.state === 'suspended' || audioContext.state === 'interrupted') {
+                    try {
+                        await audioContext.resume();
+                        console.log('AudioContext resumed successfully, state:', audioContext.state);
+                        audioInitialized = true;
+                        hideAudioWarning();
+                    } catch (err) {
+                        console.error('Failed to resume AudioContext:', err);
+                        showAudioWarning();
+                        return;
+                    }
+                } else if (audioContext.state === 'running') {
+                    audioInitialized = true;
+                    hideAudioWarning();
+                }
+
+                // Check again after unlock attempt
+                if (audioContext.state !== 'running') {
+                    showAudioWarning();
+                    return;
+                }
+            }
+
+            // Stop if already playing
+            if (activeOscillators.has(button)) {
+                stopTone(button);
+                return;
+            }
+
+            try {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                const panNode = audioContext.createStereoPanner();
+
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+
+                // Get settings for this pitch
+                const settings = pitchSettings.get(frequency) || { pan: 0, amplitude: 1.0 };
+
+                // Set pan
+                panNode.pan.setValueAtTime(settings.pan, audioContext.currentTime);
+
+                // Calculate final gain: individual amplitude * master amplitude
+                const targetGain = settings.amplitude * masterAmplitude;
+
+                const fadeTimeSec = fadeTimeMs / 1000; // Convert milliseconds to seconds
+                gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(targetGain, audioContext.currentTime + fadeTimeSec);
+
+                oscillator.connect(gainNode);
+                gainNode.connect(panNode);
+                panNode.connect(audioContext.destination);
+
+                oscillator.start();
+
+                activeOscillators.set(button, { oscillator, gainNode, panNode });
+                button.classList.add('playing');
+            } catch (err) {
+                console.error('Failed to play tone:', err);
+                showAudioWarning();
+            }
+        }
+
+        function stopTone(button) {
+            const nodes = activeOscillators.get(button);
+            if (nodes) {
+                const { oscillator, gainNode } = nodes;
+                const fadeTimeSec = fadeTimeMs / 1000; // Convert milliseconds to seconds
+                gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + fadeTimeSec);
+                oscillator.stop(audioContext.currentTime + fadeTimeSec);
+                activeOscillators.delete(button);
+                button.classList.remove('playing');
+            }
+        }
+
+        function validateAndApplyRootHz() {
+            const input = document.getElementById('rootHz');
+            const errorDiv = document.getElementById('rootHzError');
+            const currentDisplay = document.getElementById('currentRootHz');
+            const value = parseFloat(input.value);
+
+            // Clear previous validation state
+            input.classList.remove('invalid');
+            errorDiv.classList.remove('show');
+
+            if (isNaN(value) || value < 20 || value > 4000) {
+                input.classList.add('invalid');
+                errorDiv.classList.add('show');
+                errorDiv.textContent = 'Invalid frequency (must be 20-4000 Hz)';
+                return false;
+            }
+
+            // Apply the value
+            currentAppliedRootHz = value;
+            currentDisplay.textContent = value;
+            input.classList.remove('invalid');
+            errorDiv.classList.remove('show');
+            return true;
+        }
+
+        function validateAndApplyRatio() {
+            const input = document.getElementById('ratio');
+            const errorDiv = document.getElementById('ratioError');
+            const currentDisplay = document.getElementById('currentRatio');
+            const ratioInput = input.value.trim();
+
+            // Clear previous validation state
+            input.classList.remove('invalid');
+            errorDiv.classList.remove('show');
+
+            try {
+                const ratio = parseRatio(ratioInput);
+                if (isNaN(ratio) || ratio <= 0) {
+                    throw new Error('Invalid ratio');
+                }
+
+                // Apply the value
+                currentAppliedRatio = ratioInput;
+                currentDisplay.textContent = ratioInput;
+                input.classList.remove('invalid');
+                errorDiv.classList.remove('show');
+                return true;
+            } catch (e) {
+                input.classList.add('invalid');
+                errorDiv.classList.add('show');
+                errorDiv.textContent = 'Invalid ratio (e.g., 1.5 or 3/2)';
+                return false;
+            }
+        }
+
+        function generateTones() {
+            const rootHz = currentAppliedRootHz;
+            const ratio = parseRatio(currentAppliedRatio);
+            const selectedMode = document.getElementById('modeSelect').value;
+
+            const toneGrid = document.getElementById('toneGrid');
+            toneGrid.innerHTML = '';
+
+            // Check if mode-based generation is selected
+            const modeRatios = getModeRatios(selectedMode);
+
+            if (modeRatios) {
+                // Generate tones based on the selected mode
+                let buttonIndex = 0; // Track actual DOM button index (separate from forEach index)
+                modeRatios.forEach((interval, index) => {
+                    const ratioValue = parseRatio(interval.ratio);
+                    const freq = rootHz * ratioValue;
+
+                    // Skip if frequency is out of audible range
+                    if (freq < 20 || freq > 4000) return;
+
+                    const button = document.createElement('button');
+                    button.className = 'tone-button';
+
+                    const freqDisplay = document.createElement('span');
+                    freqDisplay.className = 'freq-display';
+                    freqDisplay.textContent = freq.toFixed(2) + ' Hz';
+
+                    const ratioDisplay = document.createElement('span');
+                    ratioDisplay.className = 'ratio-display';
+                    ratioDisplay.textContent = interval.ratio;
+
+                    button.appendChild(freqDisplay);
+                    button.appendChild(ratioDisplay);
+
+                    // Add interval name
+                    const intervalDisplay = document.createElement('span');
+                    intervalDisplay.className = 'interval-name';
+                    intervalDisplay.textContent = interval.name;
+                    button.appendChild(intervalDisplay);
+
+                    // Initialize settings for this pitch if not exists
+                    if (!pitchSettings.has(freq)) {
+                        pitchSettings.set(freq, {
+                            pan: 0,      // -1 (left) to 1 (right)
+                            amplitude: 1.0  // 0 to 1
+                        });
+                    }
+
+                    // Create controls container
+                    const controlsContainer = document.createElement('div');
+                    controlsContainer.className = 'pitch-controls';
+
+                    // Pan control
+                    const panControl = document.createElement('div');
+                    panControl.className = 'pitch-control';
+                    const panLabel = document.createElement('label');
+                    panLabel.innerHTML = `PAN <span class="value-inline" id="pan-value-mode-${buttonIndex}">(C)</span>`;
+                    const panInput = document.createElement('input');
+                    panInput.type = 'range';
+                    panInput.min = '-1';
+                    panInput.max = '1';
+                    panInput.step = '0.01';
+                    panInput.value = '0';
+                    panInput.addEventListener('input', (e) => {
+                        const panValue = parseFloat(e.target.value);
+                        pitchSettings.get(freq).pan = panValue;
+                        const panValueSpan = document.getElementById(`pan-value-mode-${buttonIndex}`);
+                        if (panValue < -0.05) {
+                            panValueSpan.textContent = `(L${Math.abs(panValue).toFixed(2)})`;
+                        } else if (panValue > 0.05) {
+                            panValueSpan.textContent = `(R${panValue.toFixed(2)})`;
+                        } else {
+                            panValueSpan.textContent = '(C)';
+                        }
+                        // Update if currently playing
+                        if (activeOscillators.has(button)) {
+                            const nodes = activeOscillators.get(button);
+                            if (nodes.panNode) {
+                                nodes.panNode.pan.setValueAtTime(panValue, audioContext.currentTime);
+                            }
+                        }
+                        e.stopPropagation();
+                    });
+                    panControl.appendChild(panLabel);
+                    panControl.appendChild(panInput);
+
+                    // Amplitude control
+                    const ampControl = document.createElement('div');
+                    ampControl.className = 'pitch-control';
+                    const ampLabel = document.createElement('label');
+                    ampLabel.innerHTML = `AMPLITUDE <span class="value-inline" id="amp-value-mode-${buttonIndex}">1.00</span>`;
+                    const ampInput = document.createElement('input');
+                    ampInput.type = 'range';
+                    ampInput.min = '0';
+                    ampInput.max = '1';
+                    ampInput.step = '0.01';
+                    ampInput.value = '1';
+                    ampInput.addEventListener('input', (e) => {
+                        const ampValue = parseFloat(e.target.value);
+                        pitchSettings.get(freq).amplitude = ampValue;
+                        document.getElementById(`amp-value-mode-${buttonIndex}`).textContent = ampValue.toFixed(2);
+                        // Update if currently playing
+                        if (activeOscillators.has(button)) {
+                            const nodes = activeOscillators.get(button);
+                            if (nodes.gainNode) {
+                                const targetGain = ampValue * masterAmplitude;
+                                nodes.gainNode.gain.setValueAtTime(targetGain, audioContext.currentTime);
+                            }
+                        }
+                        e.stopPropagation();
+                    });
+                    ampControl.appendChild(ampLabel);
+                    ampControl.appendChild(ampInput);
+
+                    controlsContainer.appendChild(panControl);
+                    controlsContainer.appendChild(ampControl);
+                    button.appendChild(controlsContainer);
+
+                    button.addEventListener('click', (e) => {
+                        // Don't toggle if clicking on controls
+                        if (e.target.tagName === 'INPUT') return;
+
+                        if (activeOscillators.has(button)) {
+                            stopTone(button);
+                        } else {
+                            playTone(freq, button);
+                        }
+                    });
+
+                    toneGrid.appendChild(button);
+                    buttonIndex++; // Increment after adding button to DOM
+                });
+            } else {
+                // Free exploration mode: Generate combinations m*A + n*B where A=rootHz, B=rootHz*ratio
+                const combinations = [
+                    [1, 0], // 1*A
+                    [0, 1], // 1*B
+                    [2, 0], // 2*A
+                    [1, 1], // 1*A + 1*B
+                    [3, 0], // 3*A
+                    [2, 1], // 2*A + 1*B
+                    [0, 2], // 2*B
+                    [1, 2], // 1*A + 2*B
+                    [4, 0], // 4*A
+                    [3, 1], // 3*A + 1*B
+                    [2, 2], // 2*A + 2*B
+                    [1, 3], // 1*A + 3*B
+                    [0, 3], // 3*B
+                    [5, 0], // 5*A
+                    [4, 1], // 4*A + 1*B
+                    [3, 2], // 3*A + 2*B
+                    [2, 3], // 2*A + 3*B
+                    [1, 4], // 1*A + 4*B
+                ];
+
+                let buttonIndex = 0; // Track actual DOM button index (separate from forEach index)
+                combinations.forEach(([m, n], index) => {
+                    const freq = m * rootHz + n * (rootHz * ratio);
+
+                    // Skip if frequency is out of audible range
+                    if (freq < 20 || freq > 4000) return;
+
+                    const button = document.createElement('button');
+                    button.className = 'tone-button';
+
+                    const freqDisplay = document.createElement('span');
+                    freqDisplay.className = 'freq-display';
+                    freqDisplay.textContent = freq.toFixed(2) + ' Hz';
+
+                    // Calculate the ratio relative to root frequency
+                    const relativeRatio = freq / rootHz;
+                    const integerRatio = decimalToFraction(relativeRatio);
+
+                    const ratioDisplay = document.createElement('span');
+                    ratioDisplay.className = 'ratio-display';
+                    ratioDisplay.textContent = `${integerRatio} (${m}*A + ${n}*B)`;
+
+                    button.appendChild(freqDisplay);
+                    button.appendChild(ratioDisplay);
+
+                    // Add interval name if it's a standard interval
+                    const intervalName = getIntervalName(integerRatio);
+                    if (intervalName) {
+                        const intervalDisplay = document.createElement('span');
+                        intervalDisplay.className = 'interval-name';
+                        intervalDisplay.textContent = intervalName;
+                        button.appendChild(intervalDisplay);
+                    }
+
+                    // Initialize settings for this pitch if not exists
+                    if (!pitchSettings.has(freq)) {
+                        pitchSettings.set(freq, {
+                            pan: 0,      // -1 (left) to 1 (right)
+                            amplitude: 1.0  // 0 to 1
+                        });
+                    }
+
+                    // Create controls container
+                    const controlsContainer = document.createElement('div');
+                    controlsContainer.className = 'pitch-controls';
+
+                    // Pan control
+                    const panControl = document.createElement('div');
+                    panControl.className = 'pitch-control';
+                    const panLabel = document.createElement('label');
+                    panLabel.innerHTML = `PAN <span class="value-inline" id="pan-value-free-${buttonIndex}">(C)</span>`;
+                    const panInput = document.createElement('input');
+                    panInput.type = 'range';
+                    panInput.min = '-1';
+                    panInput.max = '1';
+                    panInput.step = '0.01';
+                    panInput.value = '0';
+                    panInput.addEventListener('input', (e) => {
+                        const panValue = parseFloat(e.target.value);
+                        pitchSettings.get(freq).pan = panValue;
+                        const panValueSpan = document.getElementById(`pan-value-free-${buttonIndex}`);
+                        if (panValue < -0.05) {
+                            panValueSpan.textContent = `(L${Math.abs(panValue).toFixed(2)})`;
+                        } else if (panValue > 0.05) {
+                            panValueSpan.textContent = `(R${panValue.toFixed(2)})`;
+                        } else {
+                            panValueSpan.textContent = '(C)';
+                        }
+                        // Update if currently playing
+                        if (activeOscillators.has(button)) {
+                            const nodes = activeOscillators.get(button);
+                            if (nodes.panNode) {
+                                nodes.panNode.pan.setValueAtTime(panValue, audioContext.currentTime);
+                            }
+                        }
+                        e.stopPropagation();
+                    });
+                    panControl.appendChild(panLabel);
+                    panControl.appendChild(panInput);
+
+                    // Amplitude control
+                    const ampControl = document.createElement('div');
+                    ampControl.className = 'pitch-control';
+                    const ampLabel = document.createElement('label');
+                    ampLabel.innerHTML = `AMPLITUDE <span class="value-inline" id="amp-value-free-${buttonIndex}">1.00</span>`;
+                    const ampInput = document.createElement('input');
+                    ampInput.type = 'range';
+                    ampInput.min = '0';
+                    ampInput.max = '1';
+                    ampInput.step = '0.01';
+                    ampInput.value = '1';
+                    ampInput.addEventListener('input', (e) => {
+                        const ampValue = parseFloat(e.target.value);
+                        pitchSettings.get(freq).amplitude = ampValue;
+                        document.getElementById(`amp-value-free-${buttonIndex}`).textContent = ampValue.toFixed(2);
+                        // Update if currently playing
+                        if (activeOscillators.has(button)) {
+                            const nodes = activeOscillators.get(button);
+                            if (nodes.gainNode) {
+                                const targetGain = ampValue * masterAmplitude;
+                                nodes.gainNode.gain.setValueAtTime(targetGain, audioContext.currentTime);
+                            }
+                        }
+                        e.stopPropagation();
+                    });
+                    ampControl.appendChild(ampLabel);
+                    ampControl.appendChild(ampInput);
+
+                    controlsContainer.appendChild(panControl);
+                    controlsContainer.appendChild(ampControl);
+                    button.appendChild(controlsContainer);
+
+                    button.addEventListener('click', (e) => {
+                        // Don't toggle if clicking on controls
+                        if (e.target.tagName === 'INPUT') return;
+
+                        if (activeOscillators.has(button)) {
+                            stopTone(button);
+                        } else {
+                            playTone(freq, button);
+                        }
+                    });
+
+                    toneGrid.appendChild(button);
+                    buttonIndex++; // Increment after adding button to DOM
+                });
+            }
+        }
+
+        // Initialize audio button handler
+        document.getElementById('initAudioBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            unlockAudio();
+        });
+
+        // Generate initial tones
+        generateTones();
+
+        // Check audio state after page load
+        setTimeout(checkAudioState, 100);
+
+        // Apply changes only on Enter key press
+        document.getElementById('rootHz').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (validateAndApplyRootHz()) {
+                    generateTones();
+                }
+            }
+        });
+
+        document.getElementById('ratio').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (validateAndApplyRatio()) {
+                    generateTones();
+                }
+            }
+        });
+
+        // Clear validation state when user starts typing
+        document.getElementById('rootHz').addEventListener('input', (e) => {
+            const input = e.target;
+            const errorDiv = document.getElementById('rootHzError');
+            input.classList.remove('invalid');
+            errorDiv.classList.remove('show');
+        });
+
+        document.getElementById('ratio').addEventListener('input', (e) => {
+            const input = e.target;
+            const errorDiv = document.getElementById('ratioError');
+            input.classList.remove('invalid');
+            errorDiv.classList.remove('show');
+        });
+
+        // Fade time slider event listener
+        document.getElementById('fadeTime').addEventListener('input', (e) => {
+            fadeTimeMs = parseInt(e.target.value);
+            document.getElementById('currentFadeTime').textContent = fadeTimeMs;
+        });
+
+        // Master amplitude event listener
+        const masterAmplitudeInput = document.getElementById('masterAmplitude');
+        const masterAmplitudeValue = document.getElementById('masterAmplitudeValue');
+        masterAmplitudeInput.addEventListener('input', (e) => {
+            masterAmplitude = parseFloat(e.target.value);
+            masterAmplitudeValue.textContent = masterAmplitude.toFixed(2);
+
+            // Update all currently playing oscillators
+            activeOscillators.forEach((nodes, button) => {
+                if (nodes.gainNode) {
+                    // Get the frequency from the button
+                    const freqText = button.querySelector('.freq-display').textContent;
+                    const frequency = parseFloat(freqText);
+                    const settings = pitchSettings.get(frequency) || { amplitude: 1.0 };
+                    const targetGain = settings.amplitude * masterAmplitude;
+                    nodes.gainNode.gain.setValueAtTime(targetGain, audioContext.currentTime);
+                }
+            });
+        });
+
+        // Mode select event listener
+        document.getElementById('modeSelect').addEventListener('change', (e) => {
+            generateTones();
+        });
+
+        // Also try to unlock audio on any user interaction (belt and suspenders approach)
+        document.addEventListener('touchstart', function tryUnlock() {
+            if (!audioInitialized) {
+                unlockAudio();
+            }
+        }, { once: true });
+
+        document.addEventListener('click', function tryUnlock() {
+            if (!audioInitialized) {
+                unlockAudio();
+            }
+        }, { once: true });
+
+        // =====================================================
+        // MICHIGAN XVI FADERBANK - WEB MIDI API SUPPORT
+        // =====================================================
+
+        let midiAccess = null;
+        let selectedMidiInput = null;
+        let midiActivityTimeout = null;
+
+        // Initialize Web MIDI API
+        async function initMIDI() {
+            const statusElement = document.getElementById('midiStatus');
+            const statusText = document.getElementById('midiStatusText');
+            const indicator = document.getElementById('midiIndicator');
+            const deviceSelect = document.getElementById('midiDeviceSelect');
+
+            if (!navigator.requestMIDIAccess) {
+                statusText.textContent = 'Web MIDI API not supported in this browser';
+                return;
+            }
+
+            try {
+                midiAccess = await navigator.requestMIDIAccess({ sysex: false });
+                statusText.textContent = 'MIDI available - select device';
+                deviceSelect.disabled = false;
+
+                // Populate device list
+                updateMIDIDevices();
+
+                // Listen for device changes
+                midiAccess.onstatechange = (e) => {
+                    console.log('MIDI state change:', e.port.name, e.port.state);
+                    updateMIDIDevices();
+                };
+
+            } catch (err) {
+                console.error('Failed to get MIDI access:', err);
+                statusText.textContent = 'MIDI access denied: ' + err.message;
+            }
+        }
+
+        // Update the list of available MIDI devices
+        function updateMIDIDevices() {
+            const deviceSelect = document.getElementById('midiDeviceSelect');
+            const currentValue = deviceSelect.value;
+
+            // Clear existing options
+            deviceSelect.innerHTML = '<option value="">-- Select MIDI Device --</option>';
+
+            // Add available input devices
+            for (const input of midiAccess.inputs.values()) {
+                const option = document.createElement('option');
+                option.value = input.id;
+                option.textContent = input.name || `Unknown Device (${input.id})`;
+
+                // Highlight Michigan XVI if found
+                if (input.name && input.name.toLowerCase().includes('michigan')) {
+                    option.textContent = '★ ' + option.textContent;
+                }
+
+                deviceSelect.appendChild(option);
+            }
+
+            // Restore selection if device still exists
+            if (currentValue) {
+                deviceSelect.value = currentValue;
+                if (!deviceSelect.value) {
+                    // Device was disconnected
+                    disconnectMIDI();
+                }
+            }
+        }
+
+        // Connect to selected MIDI device
+        function connectMIDI(deviceId) {
+            const statusElement = document.getElementById('midiStatus');
+            const statusText = document.getElementById('midiStatusText');
+            const indicator = document.getElementById('midiIndicator');
+
+            // Disconnect previous device
+            if (selectedMidiInput) {
+                selectedMidiInput.onmidimessage = null;
+            }
+
+            if (!deviceId) {
+                disconnectMIDI();
+                return;
+            }
+
+            const input = midiAccess.inputs.get(deviceId);
+            if (!input) {
+                statusText.textContent = 'Device not found';
+                return;
+            }
+
+            selectedMidiInput = input;
+            input.onmidimessage = handleMIDIMessage;
+
+            statusElement.classList.remove('disconnected');
+            statusElement.classList.add('connected');
+            indicator.classList.add('connected');
+            statusText.textContent = 'Connected: ' + input.name;
+
+            console.log('Connected to MIDI device:', input.name);
+        }
+
+        // Disconnect MIDI device
+        function disconnectMIDI() {
+            const statusElement = document.getElementById('midiStatus');
+            const statusText = document.getElementById('midiStatusText');
+            const indicator = document.getElementById('midiIndicator');
+
+            if (selectedMidiInput) {
+                selectedMidiInput.onmidimessage = null;
+                selectedMidiInput = null;
+            }
+
+            statusElement.classList.remove('connected');
+            statusElement.classList.add('disconnected');
+            indicator.classList.remove('connected');
+            indicator.classList.remove('activity');
+            statusText.textContent = 'MIDI available - select device';
+        }
+
+        // Handle incoming MIDI messages
+        function handleMIDIMessage(event) {
+            const [status, data1, data2] = event.data;
+            const messageType = status & 0xF0;
+            const channel = (status & 0x0F) + 1;
+
+            // Show activity indicator
+            showMIDIActivity();
+
+            // Handle Control Change messages (0xB0 = 176)
+            if (messageType === 0xB0) {
+                const ccNumber = data1;
+                const ccValue = data2;
+
+                console.log(`MIDI CC: ch${channel} cc${ccNumber} val${ccValue}`);
+
+                // Update fader display
+                updateFaderDisplay(ccNumber, ccValue);
+
+                // Map CC to controls (Michigan XVI sends CC 0-15 or CC 32-47)
+                handleFaderCC(ccNumber, ccValue);
+            }
+        }
+
+        // Show activity indicator briefly
+        function showMIDIActivity() {
+            const indicator = document.getElementById('midiIndicator');
+            indicator.classList.add('activity');
+
+            if (midiActivityTimeout) {
+                clearTimeout(midiActivityTimeout);
+            }
+
+            midiActivityTimeout = setTimeout(() => {
+                indicator.classList.remove('activity');
+            }, 100);
+        }
+
+        // Update fader visual display
+        function updateFaderDisplay(ccNumber, ccValue) {
+            // Normalize CC number to 0-15 range (support both CC 0-15 and CC 32-47)
+            let faderIndex = ccNumber;
+            if (ccNumber >= 32 && ccNumber <= 47) {
+                faderIndex = ccNumber - 32;
+            } else if (ccNumber < 0 || ccNumber > 15) {
+                return;
+            }
+
+            const faderFill = document.getElementById(`fader-${faderIndex}`);
+            const faderValue = document.getElementById(`fader-val-${faderIndex}`);
+
+            if (faderFill && faderValue) {
+                const percentage = (ccValue / 127) * 100;
+                faderFill.style.height = percentage + '%';
+                faderValue.textContent = ccValue;
+            }
+        }
+
+        // Map fader CC values to intonation explorer controls
+        function handleFaderCC(ccNumber, ccValue) {
+            const normalizedValue = ccValue / 127; // 0.0 to 1.0
+            console.log(`handleFaderCC: CC${ccNumber} = ${ccValue} (normalized: ${normalizedValue.toFixed(3)})`);
+
+            // Normalize CC number to 0-15 range
+            // Michigan XVI can send CC 0-15 or CC 32-47 depending on configuration
+            let faderIndex = ccNumber;
+            if (ccNumber >= 32 && ccNumber <= 47) {
+                faderIndex = ccNumber - 32;
+                console.log(`  Normalized CC${ccNumber} → fader index ${faderIndex}`);
+            } else if (ccNumber > 15) {
+                console.log(`  CC${ccNumber} outside supported ranges (0-15 or 32-47) - ignoring`);
+                return;
+            }
+
+            switch (faderIndex) {
+                case 0: // Fader 1: Master Amplitude
+                    console.log('→ Setting master amplitude');
+                    setMasterAmplitude(normalizedValue);
+                    break;
+
+                case 1: // Fader 2: Pitch 1 Amplitude
+                case 2: // Fader 3: Pitch 2 Amplitude
+                case 3: // Fader 4: Pitch 3 Amplitude
+                case 4: // Fader 5: Pitch 4 Amplitude
+                case 5: // Fader 6: Pitch 5 Amplitude
+                case 6: // Fader 7: Pitch 6 Amplitude
+                case 7: // Fader 8: Pitch 7 Amplitude
+                case 8: // Fader 9: Pitch 8 Amplitude
+                case 9: // Fader 10: Pitch 9 Amplitude
+                case 10: // Fader 11: Pitch 10 Amplitude
+                    console.log(`→ Setting pitch ${faderIndex} amplitude (pitchIndex: ${faderIndex - 1})`);
+                    setPitchAmplitude(faderIndex - 1, normalizedValue);
+                    break;
+
+                case 11: // Fader 12: Fade Time (0-10000ms)
+                    setFadeTime(Math.round(normalizedValue * 10000));
+                    break;
+
+                case 12: // Fader 13: Root Frequency (20-4000 Hz, logarithmic)
+                    // Use logarithmic scaling for more musical control
+                    const minHz = 20;
+                    const maxHz = 4000;
+                    const logMin = Math.log(minHz);
+                    const logMax = Math.log(maxHz);
+                    const logHz = logMin + normalizedValue * (logMax - logMin);
+                    const hz = Math.exp(logHz);
+                    setRootFrequency(hz);
+                    break;
+
+                // Faders 14-16 (index 13-15) are unassigned - can be customized
+                case 13:
+                case 14:
+                case 15:
+                    // Reserved for future use
+                    break;
+            }
+        }
+
+        // Set master amplitude from MIDI
+        function setMasterAmplitude(value) {
+            masterAmplitude = value;
+            const slider = document.getElementById('masterAmplitude');
+            const display = document.getElementById('masterAmplitudeValue');
+
+            slider.value = value;
+            display.textContent = value.toFixed(2);
+
+            // Update all currently playing oscillators
+            activeOscillators.forEach((nodes, button) => {
+                if (nodes.gainNode) {
+                    const freqText = button.querySelector('.freq-display').textContent;
+                    const frequency = parseFloat(freqText);
+                    const settings = pitchSettings.get(frequency) || { amplitude: 1.0 };
+                    const targetGain = settings.amplitude * masterAmplitude;
+                    nodes.gainNode.gain.setValueAtTime(targetGain, audioContext.currentTime);
+                }
+            });
+        }
+
+        // Set individual pitch amplitude from MIDI
+        function setPitchAmplitude(pitchIndex, value) {
+            console.log(`setPitchAmplitude called: pitchIndex=${pitchIndex}, value=${value.toFixed(3)}`);
+
+            // Get the tone buttons in order
+            const toneButtons = document.querySelectorAll('.tone-button');
+            console.log(`  Found ${toneButtons.length} tone buttons`);
+
+            if (pitchIndex >= toneButtons.length) {
+                console.log(`  ✗ pitchIndex ${pitchIndex} >= ${toneButtons.length} tone buttons - aborting`);
+                return;
+            }
+
+            const button = toneButtons[pitchIndex];
+            console.log(`  Button at index ${pitchIndex}:`, button);
+
+            const freqDisplay = button.querySelector('.freq-display');
+            if (!freqDisplay) {
+                console.log(`  ✗ No .freq-display element found in button`);
+                return;
+            }
+
+            const freqText = freqDisplay.textContent;
+            const frequency = parseFloat(freqText);
+            console.log(`  Frequency: ${frequency} Hz`);
+
+            // Update pitch settings
+            if (!pitchSettings.has(frequency)) {
+                pitchSettings.set(frequency, { pan: 0, amplitude: 1.0 });
+                console.log(`  Created new pitchSettings entry for ${frequency} Hz`);
+            }
+            pitchSettings.get(frequency).amplitude = value;
+            console.log(`  Updated pitchSettings[${frequency}].amplitude = ${value.toFixed(3)}`);
+
+            // Update the slider in the UI
+            const selectedMode = document.getElementById('modeSelect').value;
+            const modeRatios = getModeRatios(selectedMode);
+            const idPrefix = modeRatios ? 'mode' : 'free';
+            console.log(`  Mode: ${selectedMode}, idPrefix: ${idPrefix}`);
+
+            // Get all range inputs and select the second one (amplitude, not pan)
+            const rangeInputs = button.querySelectorAll('input[type="range"]');
+            const ampSlider = rangeInputs.length >= 2 ? rangeInputs[1] : null;
+            const ampValueSpan = document.getElementById(`amp-value-${idPrefix}-${pitchIndex}`);
+
+            console.log(`  ampSlider found:`, ampSlider !== null);
+            console.log(`  ampValueSpan (amp-value-${idPrefix}-${pitchIndex}) found:`, ampValueSpan !== null);
+
+            if (ampSlider) {
+                ampSlider.value = value;
+                console.log(`  ✓ Updated slider value to ${value}`);
+            } else {
+                console.log(`  ✗ No amplitude slider found in button`);
+            }
+
+            if (ampValueSpan) {
+                ampValueSpan.textContent = value.toFixed(2);
+                console.log(`  ✓ Updated value display to ${value.toFixed(2)}`);
+            } else {
+                console.log(`  ✗ No value span found with id amp-value-${idPrefix}-${pitchIndex}`);
+            }
+
+            // Update if currently playing
+            const isPlaying = activeOscillators.has(button);
+            console.log(`  Currently playing: ${isPlaying}`);
+
+            if (isPlaying) {
+                const nodes = activeOscillators.get(button);
+                if (nodes.gainNode) {
+                    const targetGain = value * masterAmplitude;
+                    nodes.gainNode.gain.setValueAtTime(targetGain, audioContext.currentTime);
+                    console.log(`  ✓ Updated playing oscillator gain to ${targetGain.toFixed(3)}`);
+                }
+            }
+        }
+
+        // Set fade time from MIDI
+        function setFadeTime(ms) {
+            fadeTimeMs = ms;
+            const slider = document.getElementById('fadeTime');
+            const display = document.getElementById('currentFadeTime');
+
+            slider.value = ms;
+            display.textContent = ms;
+        }
+
+        // Set root frequency from MIDI
+        function setRootFrequency(hz) {
+            // Clamp to valid range
+            hz = Math.max(20, Math.min(4000, hz));
+            hz = Math.round(hz * 100) / 100; // Round to 2 decimal places
+
+            currentAppliedRootHz = hz;
+            const input = document.getElementById('rootHz');
+            const display = document.getElementById('currentRootHz');
+
+            input.value = hz;
+            display.textContent = hz;
+
+            // Regenerate tones with new root
+            generateTones();
+        }
+
+        // Device select event listener
+        document.getElementById('midiDeviceSelect').addEventListener('change', (e) => {
+            connectMIDI(e.target.value);
+        });
+
+        // Initialize MIDI on page load
+        initMIDI();
+    </script>
+</body>
+</html>

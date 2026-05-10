@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Spectrum Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #fff;
+            color: #000;
+            padding: 20px;
+            line-height: 1.6;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: clamp(1.5rem, 5vw, 2.5rem);
+            border: 3px solid #000;
+            padding: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: clamp(0.9rem, 3vw, 1rem);
+        }
+
+        .upload-section {
+            text-align: center;
+            padding: 40px;
+            border: 2px solid #000;
+            margin-bottom: 30px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-label {
+            display: inline-block;
+            padding: 15px 40px;
+            background: #000;
+            color: #fff;
+            cursor: pointer;
+            font-size: clamp(0.9rem, 3vw, 1.1rem);
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            transition: all 0.1s;
+        }
+
+        .file-label:hover {
+            background: #333;
+        }
+
+        .file-label:active {
+            transform: scale(0.98);
+        }
+
+        .file-name {
+            margin-top: 15px;
+            font-size: clamp(0.85rem, 3vw, 0.95rem);
+        }
+
+        .canvas-container {
+            margin: 30px 0;
+            text-align: center;
+            background: #000;
+            border: 2px solid #000;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-height: 500px;
+        }
+
+        .frequencies-section {
+            margin-top: 30px;
+        }
+
+        .frequencies-section h2 {
+            font-size: clamp(1.2rem, 4vw, 1.8rem);
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+            margin: 30px 0 15px 0;
+        }
+
+        .frequencies-section p {
+            margin-bottom: 15px;
+        }
+
+        .frequency-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .frequency-item {
+            background: #fff;
+            color: #000;
+            border: 2px solid #000;
+            padding: 15px;
+            text-align: left;
+            transition: all 0.1s;
+            cursor: pointer;
+        }
+
+        .frequency-item:hover {
+            background: #000;
+            color: #fff;
+        }
+
+        .frequency-item.playing {
+            background: #333;
+            color: #fff;
+            border-color: #333;
+        }
+
+        .frequency-value {
+            font-size: clamp(1.2rem, 4vw, 1.5rem);
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .frequency-label {
+            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+            opacity: 0.7;
+        }
+
+        .frequency-magnitude {
+            font-size: clamp(0.75rem, 2.5vw, 0.85rem);
+            margin-top: 5px;
+            opacity: 0.6;
+        }
+
+        .pitch-controls {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #ccc;
+        }
+
+        .pitch-control {
+            margin-bottom: 8px;
+        }
+
+        .pitch-control:last-child {
+            margin-bottom: 0;
+        }
+
+        .pitch-control label {
+            display: block;
+            font-size: clamp(0.7rem, 2vw, 0.75rem);
+            margin-bottom: 4px;
+            opacity: 0.8;
+        }
+
+        .pitch-control input[type="range"] {
+            width: 100%;
+            height: 24px;
+            background: transparent;
+            cursor: pointer;
+            -webkit-appearance: none;
+        }
+
+        .pitch-control input[type="range"]::-webkit-slider-track {
+            width: 100%;
+            height: 4px;
+            background: #666;
+            border: 1px solid #666;
+        }
+
+        .pitch-control input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            background: #000;
+            cursor: pointer;
+            border: 1px solid #000;
+        }
+
+        .pitch-control input[type="range"]::-moz-range-track {
+            width: 100%;
+            height: 4px;
+            background: #666;
+            border: 1px solid #666;
+        }
+
+        .pitch-control input[type="range"]::-moz-range-thumb {
+            height: 14px;
+            width: 14px;
+            background: #000;
+            cursor: pointer;
+            border: 1px solid #000;
+            border-radius: 0;
+        }
+
+        .pitch-control .value-inline {
+            font-size: clamp(0.65rem, 1.8vw, 0.7rem);
+            opacity: 0.7;
+        }
+
+        .info-section {
+            border: 2px solid #000;
+            padding: 15px;
+            margin-top: 40px;
+            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+        }
+
+        .info-section h3 {
+            margin-bottom: 10px;
+            font-size: clamp(1rem, 3vw, 1.2rem);
+        }
+
+        .info-section p {
+            line-height: 1.6;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-size: clamp(0.9rem, 3vw, 1.2rem);
+            font-weight: bold;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .controls {
+            border: 2px solid #000;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            font-size: clamp(0.9rem, 3vw, 1rem);
+        }
+
+        .control-group input[type="number"] {
+            width: 100%;
+            background: #fff;
+            border: 2px solid #000;
+            color: #000;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            height: 40px;
+            background: transparent;
+            margin-bottom: 10px;
+            cursor: pointer;
+            -webkit-appearance: none;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-track {
+            width: 100%;
+            height: 8px;
+            background: #000;
+            border: 2px solid #000;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 30px;
+            width: 30px;
+            background: #000;
+            cursor: pointer;
+            border: 2px solid #000;
+        }
+
+        .control-group input[type="range"]::-moz-range-track {
+            width: 100%;
+            height: 8px;
+            background: #000;
+            border: 2px solid #000;
+        }
+
+        .control-group input[type="range"]::-moz-range-thumb {
+            height: 26px;
+            width: 26px;
+            background: #000;
+            cursor: pointer;
+            border: 2px solid #000;
+            border-radius: 0;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #666;
+        }
+
+        input[type="range"]:focus::-webkit-slider-thumb {
+            border-color: #666;
+        }
+
+        input[type="range"]:focus::-moz-range-thumb {
+            border-color: #666;
+        }
+
+        .control-group .value-display {
+            font-weight: bold;
+            padding: 8px 12px;
+            background: #f0f0f0;
+            border: 2px solid #000;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        /* Dark mode */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: #000;
+                color: #fff;
+            }
+
+            h1 {
+                border-color: #fff;
+            }
+
+            .subtitle {
+                color: #fff;
+            }
+
+            .upload-section {
+                border-color: #fff;
+            }
+
+            .file-label {
+                background: #fff;
+                color: #000;
+            }
+
+            .file-label:hover {
+                background: #ccc;
+            }
+
+            .canvas-container {
+                border-color: #fff;
+            }
+
+            .frequencies-section h2 {
+                border-bottom-color: #fff;
+            }
+
+            .frequency-item {
+                background: #000;
+                color: #fff;
+                border-color: #fff;
+            }
+
+            .frequency-item:hover {
+                background: #fff;
+                color: #000;
+            }
+
+            .frequency-item.playing {
+                background: #ccc;
+                color: #000;
+                border-color: #ccc;
+            }
+
+            .info-section {
+                border-color: #fff;
+            }
+
+            .controls {
+                border-color: #fff;
+            }
+
+            .control-group input[type="number"] {
+                background: #000;
+                border-color: #fff;
+                color: #fff;
+            }
+
+            .control-group input[type="range"]::-webkit-slider-track {
+                background: #fff;
+                border-color: #fff;
+            }
+
+            .control-group input[type="range"]::-webkit-slider-thumb {
+                background: #fff;
+                border-color: #fff;
+            }
+
+            .control-group input[type="range"]::-moz-range-track {
+                background: #fff;
+                border-color: #fff;
+            }
+
+            .control-group input[type="range"]::-moz-range-thumb {
+                background: #fff;
+                border-color: #fff;
+            }
+
+            input:focus {
+                border-color: #999;
+            }
+
+            input[type="range"]:focus::-webkit-slider-thumb {
+                border-color: #999;
+            }
+
+            input[type="range"]:focus::-moz-range-thumb {
+                border-color: #999;
+            }
+
+            .control-group .value-display {
+                background: #1a1a1a;
+                border-color: #fff;
+            }
+
+            .pitch-controls {
+                border-top-color: #666;
+            }
+
+            .pitch-control input[type="range"]::-webkit-slider-track {
+                background: #999;
+                border-color: #999;
+            }
+
+            .pitch-control input[type="range"]::-webkit-slider-thumb {
+                background: #fff;
+                border-color: #fff;
+            }
+
+            .pitch-control input[type="range"]::-moz-range-track {
+                background: #999;
+                border-color: #999;
+            }
+
+            .pitch-control input[type="range"]::-moz-range-thumb {
+                background: #fff;
+                border-color: #fff;
+            }
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            .upload-section {
+                padding: 20px;
+            }
+
+            .controls {
+                padding: 10px;
+            }
+
+            .frequency-list {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AUDIO SPECTRUM ANALYZER</h1>
+        <p class="subtitle">Discover the prominent frequencies in your audio recordings</p>
+
+        <div class="upload-section">
+            <input type="file" id="audioFile" class="file-input" accept="audio/wav,audio/wave,audio/*">
+            <label for="audioFile" class="file-label">CHOOSE WAV FILE</label>
+            <div class="file-name" id="fileName">No file selected</div>
+        </div>
+
+        <div class="controls hidden" id="controls">
+            <div class="control-group">
+                <label for="peakCount">NUMBER OF PEAKS</label>
+                <input type="number" id="peakCount" min="1" max="50" value="10">
+            </div>
+            <div class="control-group">
+                <label for="threshold">THRESHOLD</label>
+                <div class="value-display">CURRENT: <span id="thresholdValue">0.30</span></div>
+                <input type="range" id="threshold" min="0" max="1" step="0.01" value="0.3">
+            </div>
+            <div class="control-group">
+                <label for="fadeTime">FADE IN/OUT TIME</label>
+                <div class="value-display">CURRENT: <span id="fadeTimeValue">100</span> ms</div>
+                <input type="range" id="fadeTime" min="0" max="10000" value="100" step="10">
+            </div>
+            <div class="control-group">
+                <label for="masterAmplitude">MASTER AMPLITUDE (ALL PITCHES)</label>
+                <div class="value-display">CURRENT: <span id="masterAmplitudeValue">0.30</span></div>
+                <input type="range" id="masterAmplitude" min="0" max="1" step="0.01" value="0.3">
+            </div>
+        </div>
+
+        <div class="playback-section hidden" id="playbackSection">
+            <h2>AUDIO PLAYBACK</h2>
+            <div id="audioWarning" style="display: none; background: #ffeb3b; color: #000; padding: 15px; margin-bottom: 15px; border: 2px solid #000;">
+                <strong>⚠️ AUDIO INITIALIZATION REQUIRED</strong><br>
+                Click the button below to enable audio playback (required on iOS/Safari):
+                <br><br>
+                <button id="initAudioBtn" style="background: #000; color: #fff; padding: 12px 20px; cursor: pointer; border: none; font-family: 'Courier New', monospace; font-weight: bold;">INITIALIZE AUDIO</button>
+            </div>
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <button id="playAudioBtn" style="background: #000; color: #fff; padding: 12px 20px; cursor: pointer; border: none; font-family: 'Courier New', monospace; font-weight: bold;">PLAY AUDIO FILE</button>
+                <button id="stopAudioBtn" style="background: #000; color: #fff; padding: 12px 20px; cursor: pointer; border: none; font-family: 'Courier New', monospace; font-weight: bold;" disabled>STOP</button>
+            </div>
+        </div>
+
+        <div class="loading hidden" id="loading">Analyzing audio...</div>
+
+        <div class="canvas-container hidden" id="canvasContainer">
+            <canvas id="spectrogram"></canvas>
+        </div>
+
+        <div class="frequencies-section hidden" id="frequenciesSection">
+            <h2>PROMINENT FREQUENCIES</h2>
+            <p style="margin-bottom: 15px;">These are the dominant frequencies detected in your audio. Click any frequency to play it as a sine tone.</p>
+            <div class="frequency-list" id="frequencyList"></div>
+        </div>
+
+        <div class="info-section">
+            <h3>HOW TO USE</h3>
+            <p>
+                1. Upload a WAV audio file using the button above<br>
+                2. The analyzer will process the audio and display a spectrogram (visual representation of frequencies over time)<br>
+                3. Prominent frequencies will be extracted and displayed below the spectrogram<br>
+                4. Use these frequencies as reference points to design musical scales or understand the harmonic content of your recording<br>
+                5. Adjust the threshold to control sensitivity of peak detection
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('audioFile');
+        const fileName = document.getElementById('fileName');
+        const loading = document.getElementById('loading');
+        const canvasContainer = document.getElementById('canvasContainer');
+        const canvas = document.getElementById('spectrogram');
+        const ctx = canvas.getContext('2d');
+        const frequenciesSection = document.getElementById('frequenciesSection');
+        const frequencyList = document.getElementById('frequencyList');
+        const controls = document.getElementById('controls');
+        const peakCountInput = document.getElementById('peakCount');
+        const thresholdInput = document.getElementById('threshold');
+        const thresholdValue = document.getElementById('thresholdValue');
+        const fadeTimeInput = document.getElementById('fadeTime');
+        const fadeTimeValue = document.getElementById('fadeTimeValue');
+        const playbackSection = document.getElementById('playbackSection');
+
+        let audioBuffer = null;
+        let audioContext = null;
+        let activeOscillators = new Map();
+        let audioInitialized = false;
+        let fadeTimeMs = 100;
+        let audioSourceNode = null;
+        let pitchSettings = new Map(); // Store pan and amplitude for each pitch
+        let masterAmplitude = 0.3; // Master volume for all pitches
+
+        // Audio initialization functions
+        async function unlockAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                console.log('AudioContext created within user gesture, state:', audioContext.state);
+
+                audioContext.addEventListener('statechange', () => {
+                    console.log('AudioContext state changed to:', audioContext.state);
+                    if (audioContext.state === 'suspended' || audioContext.state === 'interrupted') {
+                        showAudioWarning();
+                    } else if (audioContext.state === 'running') {
+                        audioInitialized = true;
+                        hideAudioWarning();
+                    }
+                });
+
+                try {
+                    const buffer = audioContext.createBuffer(1, 1, 22050);
+                    const source = audioContext.createBufferSource();
+                    source.buffer = buffer;
+                    source.connect(audioContext.destination);
+                    source.start(0);
+                    console.log('Silent buffer played to unlock iOS audio');
+                } catch (err) {
+                    console.error('Failed to play unlock buffer:', err);
+                }
+            }
+
+            if (audioContext.state === 'suspended' || audioContext.state === 'interrupted') {
+                try {
+                    await audioContext.resume();
+                    console.log('AudioContext resumed successfully, state:', audioContext.state);
+                    audioInitialized = true;
+                    hideAudioWarning();
+                } catch (err) {
+                    console.error('Failed to resume AudioContext:', err);
+                    showAudioWarning();
+                }
+            } else if (audioContext.state === 'running') {
+                console.log('AudioContext already running');
+                audioInitialized = true;
+                hideAudioWarning();
+            }
+        }
+
+        function showAudioWarning() {
+            document.getElementById('audioWarning').style.display = 'block';
+        }
+
+        function hideAudioWarning() {
+            document.getElementById('audioWarning').style.display = 'none';
+        }
+
+        function checkAudioState() {
+            if (!audioContext && !audioInitialized) {
+                showAudioWarning();
+            } else if (audioContext && (audioContext.state === 'suspended' || audioContext.state === 'interrupted') && !audioInitialized) {
+                showAudioWarning();
+            }
+        }
+
+        async function playTone(frequency, element) {
+            if (!audioContext || !audioInitialized || audioContext.state !== 'running') {
+                await unlockAudio();
+                if (!audioContext || audioContext.state !== 'running') {
+                    showAudioWarning();
+                    return;
+                }
+            }
+
+            if (activeOscillators.has(element)) {
+                stopTone(element);
+                return;
+            }
+
+            try {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                const panNode = audioContext.createStereoPanner();
+
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+
+                // Get settings for this pitch
+                const settings = pitchSettings.get(frequency) || { pan: 0, amplitude: 1.0 };
+
+                // Set pan
+                panNode.pan.setValueAtTime(settings.pan, audioContext.currentTime);
+
+                // Calculate final gain: individual amplitude * master amplitude
+                const targetGain = settings.amplitude * masterAmplitude;
+
+                const fadeTimeSec = fadeTimeMs / 1000;
+                gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(targetGain, audioContext.currentTime + fadeTimeSec);
+
+                oscillator.connect(gainNode);
+                gainNode.connect(panNode);
+                panNode.connect(audioContext.destination);
+
+                oscillator.start();
+
+                activeOscillators.set(element, { oscillator, gainNode, panNode });
+                element.classList.add('playing');
+            } catch (err) {
+                console.error('Failed to play tone:', err);
+                showAudioWarning();
+            }
+        }
+
+        function stopTone(element) {
+            const nodes = activeOscillators.get(element);
+            if (nodes) {
+                const { oscillator, gainNode } = nodes;
+                const fadeTimeSec = fadeTimeMs / 1000;
+                gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + fadeTimeSec);
+                oscillator.stop(audioContext.currentTime + fadeTimeSec);
+                activeOscillators.delete(element);
+                element.classList.remove('playing');
+            }
+        }
+
+        async function playAudioFile() {
+            if (!audioBuffer) return;
+
+            if (!audioContext || !audioInitialized || audioContext.state !== 'running') {
+                await unlockAudio();
+                if (!audioContext || audioContext.state !== 'running') {
+                    showAudioWarning();
+                    return;
+                }
+            }
+
+            stopAudioFile();
+
+            try {
+                audioSourceNode = audioContext.createBufferSource();
+                audioSourceNode.buffer = audioBuffer;
+                audioSourceNode.connect(audioContext.destination);
+                audioSourceNode.start(0);
+
+                document.getElementById('playAudioBtn').disabled = true;
+                document.getElementById('stopAudioBtn').disabled = false;
+
+                audioSourceNode.onended = () => {
+                    document.getElementById('playAudioBtn').disabled = false;
+                    document.getElementById('stopAudioBtn').disabled = true;
+                    audioSourceNode = null;
+                };
+            } catch (err) {
+                console.error('Failed to play audio file:', err);
+                showAudioWarning();
+            }
+        }
+
+        function stopAudioFile() {
+            if (audioSourceNode) {
+                try {
+                    audioSourceNode.stop();
+                } catch (err) {
+                    console.error('Error stopping audio:', err);
+                }
+                audioSourceNode = null;
+                document.getElementById('playAudioBtn').disabled = false;
+                document.getElementById('stopAudioBtn').disabled = true;
+            }
+        }
+
+        thresholdInput.addEventListener('input', (e) => {
+            thresholdValue.textContent = parseFloat(e.target.value).toFixed(2);
+            if (audioBuffer) {
+                analyzeAudio(audioBuffer);
+            }
+        });
+
+        peakCountInput.addEventListener('change', () => {
+            if (audioBuffer) {
+                analyzeAudio(audioBuffer);
+            }
+        });
+
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            fileName.textContent = file.name;
+            loading.classList.remove('hidden');
+            canvasContainer.classList.add('hidden');
+            frequenciesSection.classList.add('hidden');
+            controls.classList.remove('hidden');
+
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const arrayBuffer = await file.arrayBuffer();
+                audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+                await analyzeAudio(audioBuffer);
+            } catch (error) {
+                console.error('Error processing audio:', error);
+                alert('Error processing audio file. Please make sure it\'s a valid WAV file.');
+                loading.classList.add('hidden');
+            }
+        });
+
+        async function analyzeAudio(buffer) {
+            loading.classList.remove('hidden');
+
+            // Create spectrogram
+            const spectrogram = createSpectrogram(buffer);
+
+            // Draw spectrogram
+            drawSpectrogram(spectrogram, buffer.sampleRate);
+
+            // Find prominent frequencies
+            const frequencies = findProminentFrequencies(spectrogram, buffer.sampleRate);
+
+            // Display frequencies
+            displayFrequencies(frequencies);
+
+            loading.classList.add('hidden');
+            canvasContainer.classList.remove('hidden');
+            frequenciesSection.classList.remove('hidden');
+            playbackSection.classList.remove('hidden');
+        }
+
+        function createSpectrogram(buffer) {
+            const channelData = buffer.getChannelData(0); // Use first channel
+            const fftSize = 4096; // Larger FFT for better frequency resolution
+            const hopSize = Math.floor(fftSize / 4);
+            const totalWindowCount = Math.floor((channelData.length - fftSize) / hopSize);
+
+            // Limit analysis to avoid performance issues with very long files
+            // For long files, sample windows evenly throughout the duration
+            const maxWindows = 2000;
+            const windowCount = Math.min(totalWindowCount, maxWindows);
+            const skipFactor = Math.max(1, Math.floor(totalWindowCount / maxWindows));
+
+            const spectrogram = [];
+
+            for (let i = 0; i < windowCount; i++) {
+                const windowIndex = i * skipFactor;
+                const offset = windowIndex * hopSize;
+                const segment = channelData.slice(offset, offset + fftSize);
+
+                // Apply Hanning window
+                const windowed = applyHanningWindow(segment);
+
+                // Perform FFT
+                const fftResult = performFFT(windowed);
+
+                // Get magnitude spectrum (only first half due to symmetry)
+                const magnitudes = fftResult.slice(0, fftSize / 2).map(c =>
+                    Math.sqrt(c.real * c.real + c.imag * c.imag)
+                );
+
+                spectrogram.push(magnitudes);
+            }
+
+            return spectrogram;
+        }
+
+        function applyHanningWindow(signal) {
+            const windowed = new Float32Array(signal.length);
+            for (let i = 0; i < signal.length; i++) {
+                const multiplier = 0.5 * (1 - Math.cos(2 * Math.PI * i / (signal.length - 1)));
+                windowed[i] = signal[i] * multiplier;
+            }
+            return windowed;
+        }
+
+        function performFFT(signal) {
+            const n = signal.length;
+            const complex = Array.from(signal, val => ({ real: val, imag: 0 }));
+
+            // Cooley-Tukey FFT algorithm
+            fftRecursive(complex);
+
+            return complex;
+        }
+
+        function fftRecursive(x) {
+            const n = x.length;
+
+            if (n <= 1) return x;
+
+            // Bit-reversal permutation
+            for (let i = 0; i < n; i++) {
+                const j = reverseBits(i, Math.log2(n));
+                if (j > i) {
+                    [x[i], x[j]] = [x[j], x[i]];
+                }
+            }
+
+            // Iterative FFT
+            for (let size = 2; size <= n; size *= 2) {
+                const halfSize = size / 2;
+                const step = 2 * Math.PI / size;
+
+                for (let i = 0; i < n; i += size) {
+                    for (let j = 0; j < halfSize; j++) {
+                        const angle = step * j;
+                        const wr = Math.cos(angle);
+                        const wi = -Math.sin(angle);
+
+                        const even = x[i + j];
+                        const odd = x[i + j + halfSize];
+
+                        const tr = odd.real * wr - odd.imag * wi;
+                        const ti = odd.real * wi + odd.imag * wr;
+
+                        x[i + j] = {
+                            real: even.real + tr,
+                            imag: even.imag + ti
+                        };
+
+                        x[i + j + halfSize] = {
+                            real: even.real - tr,
+                            imag: even.imag - ti
+                        };
+                    }
+                }
+            }
+        }
+
+        function reverseBits(num, bits) {
+            let result = 0;
+            for (let i = 0; i < bits; i++) {
+                result = (result << 1) | (num & 1);
+                num >>= 1;
+            }
+            return result;
+        }
+
+        function drawSpectrogram(spectrogram, sampleRate) {
+            const width = 1200;
+            const height = 600;
+            canvas.width = width;
+            canvas.height = height;
+
+            const timeSteps = spectrogram.length;
+            const freqBins = spectrogram[0].length;
+
+            // Find max magnitude for normalization
+            let maxMag = 0;
+            for (let t = 0; t < timeSteps; t++) {
+                for (let f = 0; f < freqBins; f++) {
+                    maxMag = Math.max(maxMag, spectrogram[t][f]);
+                }
+            }
+
+            // Draw spectrogram
+            const pixelWidth = width / timeSteps;
+            const pixelHeight = height / freqBins;
+
+            for (let t = 0; t < timeSteps; t++) {
+                for (let f = 0; f < freqBins; f++) {
+                    // Normalize and apply log scale for better visualization
+                    const normalized = spectrogram[t][f] / maxMag;
+                    const dbValue = 20 * Math.log10(normalized + 1e-10);
+                    const intensity = Math.max(0, (dbValue + 60) / 60); // -60dB to 0dB range
+
+                    // Color mapping (blue to red)
+                    const hue = (1 - intensity) * 240; // 240 (blue) to 0 (red)
+                    const saturation = 100;
+                    const lightness = intensity * 50;
+
+                    ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+                    ctx.fillRect(
+                        t * pixelWidth,
+                        height - (f + 1) * pixelHeight, // Flip vertically
+                        Math.ceil(pixelWidth),
+                        Math.ceil(pixelHeight)
+                    );
+                }
+            }
+
+            // Add frequency labels
+            ctx.fillStyle = 'white';
+            ctx.font = '12px "Courier New", monospace';
+            const labelFreqs = [100, 500, 1000, 2000, 5000, 10000];
+            labelFreqs.forEach(freq => {
+                if (freq < sampleRate / 2) {
+                    const binIndex = Math.floor(freq / (sampleRate / 2) * freqBins);
+                    const y = height - binIndex * pixelHeight;
+                    ctx.fillText(`${freq} Hz`, 5, y);
+                }
+            });
+        }
+
+        function findProminentFrequencies(spectrogram, sampleRate) {
+            const fftSize = spectrogram[0].length * 2; // Original FFT size
+            const freqResolution = sampleRate / fftSize;
+
+            // Use maximum magnitude across all time steps for each frequency bin
+            // This better captures transient peaks that might be averaged out
+            const maxSpectrum = new Float32Array(spectrogram[0].length);
+            for (let f = 0; f < spectrogram[0].length; f++) {
+                let max = 0;
+                for (let t = 0; t < spectrogram.length; t++) {
+                    max = Math.max(max, spectrogram[t][f]);
+                }
+                maxSpectrum[f] = max;
+            }
+
+            // Find peaks
+            const peaks = [];
+            const threshold = parseFloat(thresholdInput.value);
+
+            // Find overall maximum for normalization
+            let overallMax = 0;
+            for (let i = 0; i < maxSpectrum.length; i++) {
+                overallMax = Math.max(overallMax, maxSpectrum[i]);
+            }
+
+            // Use a sliding window approach for peak detection
+            const windowSize = 5; // Look at neighbors within this range
+
+            for (let i = windowSize; i < maxSpectrum.length - windowSize; i++) {
+                const current = maxSpectrum[i];
+
+                // Skip if below threshold
+                if (current < threshold * overallMax) continue;
+
+                // Check if it's a local maximum within the window
+                let isLocalMax = true;
+                for (let j = i - windowSize; j <= i + windowSize; j++) {
+                    if (j !== i && maxSpectrum[j] >= current) {
+                        isLocalMax = false;
+                        break;
+                    }
+                }
+
+                if (isLocalMax) {
+                    const frequency = i * freqResolution;
+
+                    // Skip very low frequencies (below 20 Hz) as they're often noise
+                    if (frequency < 20) continue;
+
+                    peaks.push({
+                        frequency: frequency,
+                        magnitude: current,
+                        bin: i
+                    });
+                }
+            }
+
+            // Sort by magnitude and take top N
+            const numPeaks = parseInt(peakCountInput.value);
+            peaks.sort((a, b) => b.magnitude - a.magnitude);
+            return peaks.slice(0, numPeaks);
+        }
+
+        function displayFrequencies(frequencies) {
+            frequencyList.innerHTML = '';
+
+            frequencies.forEach((freq, index) => {
+                const item = document.createElement('div');
+                item.className = 'frequency-item';
+
+                const value = document.createElement('div');
+                value.className = 'frequency-value';
+                value.textContent = `${freq.frequency.toFixed(1)} Hz`;
+
+                const label = document.createElement('div');
+                label.className = 'frequency-label';
+                label.textContent = `Peak ${index + 1}`;
+
+                const magnitude = document.createElement('div');
+                magnitude.className = 'frequency-magnitude';
+                const relMagnitude = (freq.magnitude / frequencies[0].magnitude * 100).toFixed(1);
+                magnitude.textContent = `Magnitude: ${relMagnitude}%`;
+
+                item.appendChild(value);
+                item.appendChild(label);
+                item.appendChild(magnitude);
+
+                // Initialize settings for this pitch if not exists
+                if (!pitchSettings.has(freq.frequency)) {
+                    pitchSettings.set(freq.frequency, {
+                        pan: 0,      // -1 (left) to 1 (right)
+                        amplitude: 1.0  // 0 to 1
+                    });
+                }
+
+                // Create controls container
+                const controlsContainer = document.createElement('div');
+                controlsContainer.className = 'pitch-controls';
+
+                // Pan control
+                const panControl = document.createElement('div');
+                panControl.className = 'pitch-control';
+                const panLabel = document.createElement('label');
+                panLabel.innerHTML = `PAN <span class="value-inline" id="pan-value-${index}">(C)</span>`;
+                const panInput = document.createElement('input');
+                panInput.type = 'range';
+                panInput.min = '-1';
+                panInput.max = '1';
+                panInput.step = '0.01';
+                panInput.value = '0';
+                panInput.addEventListener('input', (e) => {
+                    const panValue = parseFloat(e.target.value);
+                    pitchSettings.get(freq.frequency).pan = panValue;
+                    const panValueSpan = document.getElementById(`pan-value-${index}`);
+                    if (panValue < -0.05) {
+                        panValueSpan.textContent = `(L${Math.abs(panValue).toFixed(2)})`;
+                    } else if (panValue > 0.05) {
+                        panValueSpan.textContent = `(R${panValue.toFixed(2)})`;
+                    } else {
+                        panValueSpan.textContent = '(C)';
+                    }
+                    // Update if currently playing
+                    if (activeOscillators.has(item)) {
+                        const nodes = activeOscillators.get(item);
+                        if (nodes.panNode) {
+                            nodes.panNode.pan.setValueAtTime(panValue, audioContext.currentTime);
+                        }
+                    }
+                    e.stopPropagation();
+                });
+                panControl.appendChild(panLabel);
+                panControl.appendChild(panInput);
+
+                // Amplitude control
+                const ampControl = document.createElement('div');
+                ampControl.className = 'pitch-control';
+                const ampLabel = document.createElement('label');
+                ampLabel.innerHTML = `AMPLITUDE <span class="value-inline" id="amp-value-${index}">1.00</span>`;
+                const ampInput = document.createElement('input');
+                ampInput.type = 'range';
+                ampInput.min = '0';
+                ampInput.max = '1';
+                ampInput.step = '0.01';
+                ampInput.value = '1';
+                ampInput.addEventListener('input', (e) => {
+                    const ampValue = parseFloat(e.target.value);
+                    pitchSettings.get(freq.frequency).amplitude = ampValue;
+                    document.getElementById(`amp-value-${index}`).textContent = ampValue.toFixed(2);
+                    // Update if currently playing
+                    if (activeOscillators.has(item)) {
+                        const nodes = activeOscillators.get(item);
+                        if (nodes.gainNode) {
+                            const targetGain = ampValue * masterAmplitude;
+                            nodes.gainNode.gain.setValueAtTime(targetGain, audioContext.currentTime);
+                        }
+                    }
+                    e.stopPropagation();
+                });
+                ampControl.appendChild(ampLabel);
+                ampControl.appendChild(ampInput);
+
+                controlsContainer.appendChild(panControl);
+                controlsContainer.appendChild(ampControl);
+                item.appendChild(controlsContainer);
+
+                // Make frequency item clickable to play tone
+                item.addEventListener('click', (e) => {
+                    // Don't toggle if clicking on controls
+                    if (e.target.tagName === 'INPUT') return;
+
+                    if (activeOscillators.has(item)) {
+                        stopTone(item);
+                    } else {
+                        playTone(freq.frequency, item);
+                    }
+                });
+
+                frequencyList.appendChild(item);
+            });
+        }
+
+        // Event listeners for new controls
+        fadeTimeInput.addEventListener('input', (e) => {
+            fadeTimeMs = parseInt(e.target.value);
+            fadeTimeValue.textContent = fadeTimeMs;
+        });
+
+        const masterAmplitudeInput = document.getElementById('masterAmplitude');
+        const masterAmplitudeValue = document.getElementById('masterAmplitudeValue');
+        masterAmplitudeInput.addEventListener('input', (e) => {
+            masterAmplitude = parseFloat(e.target.value);
+            masterAmplitudeValue.textContent = masterAmplitude.toFixed(2);
+
+            // Update all currently playing oscillators
+            activeOscillators.forEach((nodes, element) => {
+                if (nodes.gainNode) {
+                    // Get the frequency from the element
+                    const freqText = element.querySelector('.frequency-value').textContent;
+                    const frequency = parseFloat(freqText);
+                    const settings = pitchSettings.get(frequency) || { amplitude: 1.0 };
+                    const targetGain = settings.amplitude * masterAmplitude;
+                    nodes.gainNode.gain.setValueAtTime(targetGain, audioContext.currentTime);
+                }
+            });
+        });
+
+        document.getElementById('initAudioBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            unlockAudio();
+        });
+
+        document.getElementById('playAudioBtn').addEventListener('click', () => {
+            playAudioFile();
+        });
+
+        document.getElementById('stopAudioBtn').addEventListener('click', () => {
+            stopAudioFile();
+        });
+
+        // Check audio state after page load
+        setTimeout(checkAudioState, 100);
+
+        // Try to unlock audio on any user interaction
+        document.addEventListener('touchstart', function tryUnlock() {
+            if (!audioInitialized) {
+                unlockAudio();
+            }
+        }, { once: true });
+
+        document.addEventListener('click', function tryUnlock() {
+            if (!audioInitialized) {
+                unlockAudio();
+            }
+        }, { once: true });
+    </script>
+</body>
+</html>
