@@ -448,6 +448,133 @@
             font-size: 0.75rem;
         }
 
+        /* Display mode toggle */
+        .display-mode-toggle {
+            display: flex;
+            margin-bottom: 15px;
+        }
+
+        .mode-toggle-btn {
+            flex: 1;
+            background: #fff;
+            color: #000;
+            border: 2px solid #000;
+            border-right: none;
+            padding: 12px 20px;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(0.85rem, 3vw, 1rem);
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            max-width: none;
+            width: 100%;
+            margin: 0;
+            transition: all 0.1s;
+            letter-spacing: 1px;
+        }
+
+        .mode-toggle-btn:last-child {
+            border-right: 2px solid #000;
+        }
+
+        .mode-toggle-btn.active {
+            background: #000;
+            color: #fff;
+        }
+
+        .mode-toggle-btn:hover:not(.active) {
+            background: #f0f0f0;
+        }
+
+        /* Diad Grid */
+        .diad-grid-wrapper {
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+
+        .diad-grid {
+            display: grid;
+            gap: 3px;
+            min-width: max-content;
+        }
+
+        .diad-cell {
+            border: 2px solid #000;
+            padding: 8px 6px;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(0.65rem, 1.8vw, 0.75rem);
+            text-align: center;
+            min-width: 60px;
+            min-height: 55px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            max-width: none;
+            margin: 0;
+            width: 100%;
+            background: #fff;
+            color: #000;
+        }
+
+        .diad-header {
+            border: 2px solid #000;
+            padding: 6px 4px;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(0.65rem, 1.8vw, 0.75rem);
+            text-align: center;
+            min-width: 60px;
+            background: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .diad-header-empty {
+            min-width: 60px;
+            min-height: 55px;
+        }
+
+        .diad-cell.inactive {
+            background: #f0f0f0;
+            border-color: #ddd;
+            opacity: 0.35;
+            pointer-events: none;
+            cursor: default;
+            color: #000;
+        }
+
+        .diad-cell.clickable {
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+
+        .diad-cell.clickable:hover {
+            background: #000;
+            color: #fff;
+            border-color: #000;
+        }
+
+        .diad-cell.playing {
+            background: #333;
+            color: #fff;
+            border-color: #333;
+        }
+
+        .diad-interval {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .diad-interval-name {
+            display: block;
+            font-size: 0.85em;
+            opacity: 0.65;
+            font-style: italic;
+        }
+
         /* Dark mode */
         @media (prefers-color-scheme: dark) {
             body {
@@ -604,6 +731,55 @@
 
             .fader-bar-fill {
                 background: #fff;
+            }
+
+            .mode-toggle-btn {
+                background: #000;
+                color: #fff;
+                border-color: #fff;
+                border-right-color: transparent;
+            }
+
+            .mode-toggle-btn:last-child {
+                border-right-color: #fff;
+            }
+
+            .mode-toggle-btn.active {
+                background: #fff;
+                color: #000;
+            }
+
+            .mode-toggle-btn:hover:not(.active) {
+                background: #222;
+            }
+
+            .diad-header {
+                background: #1a1a1a;
+                border-color: #fff;
+                color: #fff;
+            }
+
+            .diad-cell {
+                border-color: #fff;
+                background: #000;
+                color: #fff;
+            }
+
+            .diad-cell.inactive {
+                background: #111;
+                border-color: #333;
+                opacity: 0.3;
+            }
+
+            .diad-cell.clickable:hover {
+                background: #fff;
+                color: #000;
+            }
+
+            .diad-cell.playing {
+                background: #ccc;
+                color: #000;
+                border-color: #ccc;
             }
         }
 
@@ -824,8 +1000,16 @@
             <br><br>
             <button id="initAudioBtn" style="background: #000; color: #fff;">INITIALIZE AUDIO</button>
         </div>
-        <p style="margin-bottom: 15px;">Click any tone to play it. Display shows integer ratio relative to root frequency.</p>
+        <div class="display-mode-toggle">
+            <button class="mode-toggle-btn active" id="tonesViewBtn">TONES</button>
+            <button class="mode-toggle-btn" id="diadsViewBtn">DIADS</button>
+        </div>
+        <p id="tonesDescription" style="margin-bottom: 15px;">Click any tone to play it. Display shows integer ratio relative to root frequency.</p>
+        <p id="diadsDescription" style="display: none; margin-bottom: 15px;">Click any cell to play a diad. Upper triangle only — mirrored pairs are greyed out.</p>
         <div class="tone-grid" id="toneGrid"></div>
+        <div class="diad-grid-wrapper" id="diadGridWrapper" style="display: none;">
+            <div class="diad-grid" id="diadGrid"></div>
+        </div>
 
         <div class="research">
             <h2>CATHERINE LAMB & RATIONAL INTONATION</h2>
@@ -916,6 +1100,8 @@
         let fadeTimeMs = 100; // Default fade time in milliseconds
         let pitchSettings = new Map(); // Store pan and amplitude for each pitch
         let masterAmplitude = 0.3; // Master volume for all pitches
+        let activeDiadOscillators = new Map();
+        let currentDisplayMode = 'tones';
 
         // Function to create/unlock audio context within user gesture
         async function unlockAudio() {
@@ -1150,6 +1336,175 @@
             return modes[mode] || null;
         }
 
+        async function playDiad(freq1, freq2, button) {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            if (!audioInitialized || audioContext.state !== 'running') {
+                if (audioContext.state === 'suspended' || audioContext.state === 'interrupted') {
+                    try {
+                        await audioContext.resume();
+                        audioInitialized = true;
+                        hideAudioWarning();
+                    } catch (err) {
+                        showAudioWarning();
+                        return;
+                    }
+                } else if (audioContext.state === 'running') {
+                    audioInitialized = true;
+                    hideAudioWarning();
+                }
+                if (audioContext.state !== 'running') {
+                    showAudioWarning();
+                    return;
+                }
+            }
+
+            if (activeDiadOscillators.has(button)) {
+                stopDiad(button);
+                return;
+            }
+
+            try {
+                const fadeTimeSec = fadeTimeMs / 1000;
+
+                function makeOsc(freq) {
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    const panNode = audioContext.createStereoPanner();
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
+                    panNode.pan.setValueAtTime(0, audioContext.currentTime);
+                    gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(masterAmplitude, audioContext.currentTime + fadeTimeSec);
+                    oscillator.connect(gainNode);
+                    gainNode.connect(panNode);
+                    panNode.connect(audioContext.destination);
+                    oscillator.start();
+                    return { oscillator, gainNode, panNode };
+                }
+
+                const nodes1 = makeOsc(freq1);
+                const nodes2 = makeOsc(freq2);
+                activeDiadOscillators.set(button, [nodes1, nodes2]);
+                button.classList.add('playing');
+            } catch (err) {
+                console.error('Failed to play diad:', err);
+                showAudioWarning();
+            }
+        }
+
+        function stopDiad(button) {
+            const nodesArray = activeDiadOscillators.get(button);
+            if (nodesArray) {
+                const fadeTimeSec = fadeTimeMs / 1000;
+                nodesArray.forEach(({ oscillator, gainNode }) => {
+                    gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + fadeTimeSec);
+                    oscillator.stop(audioContext.currentTime + fadeTimeSec);
+                });
+                activeDiadOscillators.delete(button);
+                button.classList.remove('playing');
+            }
+        }
+
+        function generateDiadGrid(tones) {
+            const diadGrid = document.getElementById('diadGrid');
+            diadGrid.innerHTML = '';
+
+            const n = tones.length;
+            if (n === 0) return;
+
+            diadGrid.style.gridTemplateColumns = `auto repeat(${n}, minmax(60px, 1fr))`;
+
+            // Empty corner + column headers
+            const corner = document.createElement('div');
+            corner.className = 'diad-header-empty';
+            diadGrid.appendChild(corner);
+
+            tones.forEach(tone => {
+                const header = document.createElement('div');
+                header.className = 'diad-header';
+                const ratioSpan = document.createElement('span');
+                ratioSpan.style.fontWeight = 'bold';
+                ratioSpan.textContent = tone.ratio;
+                header.appendChild(ratioSpan);
+                if (tone.name) {
+                    const nameSpan = document.createElement('span');
+                    nameSpan.style.cssText = 'font-size:0.75em;opacity:0.6;font-style:italic;margin-top:2px';
+                    nameSpan.textContent = tone.name;
+                    header.appendChild(nameSpan);
+                }
+                diadGrid.appendChild(header);
+            });
+
+            tones.forEach((rowTone, i) => {
+                const rowHeader = document.createElement('div');
+                rowHeader.className = 'diad-header';
+                const rowRatioSpan = document.createElement('span');
+                rowRatioSpan.style.fontWeight = 'bold';
+                rowRatioSpan.textContent = rowTone.ratio;
+                rowHeader.appendChild(rowRatioSpan);
+                if (rowTone.name) {
+                    const rowNameSpan = document.createElement('span');
+                    rowNameSpan.style.cssText = 'font-size:0.75em;opacity:0.6;font-style:italic;margin-top:2px';
+                    rowNameSpan.textContent = rowTone.name;
+                    rowHeader.appendChild(rowNameSpan);
+                }
+                diadGrid.appendChild(rowHeader);
+
+                tones.forEach((colTone, j) => {
+                    const cell = document.createElement('button');
+                    cell.className = 'diad-cell';
+
+                    if (i === j) {
+                        cell.classList.add('clickable');
+
+                        const intervalSpan = document.createElement('span');
+                        intervalSpan.className = 'diad-interval';
+                        intervalSpan.textContent = '1/1';
+                        cell.appendChild(intervalSpan);
+
+                        const nameSpan = document.createElement('span');
+                        nameSpan.className = 'diad-interval-name';
+                        nameSpan.textContent = 'unison';
+                        cell.appendChild(nameSpan);
+
+                        cell.addEventListener('click', () => {
+                            playDiad(rowTone.freq, colTone.freq, cell);
+                        });
+                    } else if (i > j) {
+                        cell.classList.add('inactive');
+                    } else {
+                        cell.classList.add('clickable');
+
+                        const hiFreq = Math.max(rowTone.freq, colTone.freq);
+                        const loFreq = Math.min(rowTone.freq, colTone.freq);
+                        const intervalFraction = decimalToFraction(hiFreq / loFreq);
+                        const intervalName = getIntervalName(intervalFraction);
+
+                        const intervalSpan = document.createElement('span');
+                        intervalSpan.className = 'diad-interval';
+                        intervalSpan.textContent = intervalFraction;
+                        cell.appendChild(intervalSpan);
+
+                        if (intervalName) {
+                            const nameSpan = document.createElement('span');
+                            nameSpan.className = 'diad-interval-name';
+                            nameSpan.textContent = intervalName;
+                            cell.appendChild(nameSpan);
+                        }
+
+                        cell.addEventListener('click', () => {
+                            playDiad(rowTone.freq, colTone.freq, cell);
+                        });
+                    }
+
+                    diadGrid.appendChild(cell);
+                });
+            });
+        }
+
         async function playTone(frequency, button) {
             // Create AudioContext synchronously in user gesture if it doesn't exist (critical for Safari/iOS)
             if (!audioContext) {
@@ -1292,12 +1647,29 @@
         }
 
         function generateTones() {
+            if (audioContext) {
+                activeOscillators.forEach(({ oscillator, gainNode }) => {
+                    gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.05);
+                    oscillator.stop(audioContext.currentTime + 0.05);
+                });
+                activeDiadOscillators.forEach(nodesArray => {
+                    nodesArray.forEach(({ oscillator, gainNode }) => {
+                        gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.05);
+                        oscillator.stop(audioContext.currentTime + 0.05);
+                    });
+                });
+            }
+            activeOscillators.clear();
+            activeDiadOscillators.clear();
+
             const rootHz = currentAppliedRootHz;
             const ratio = parseRatio(currentAppliedRatio);
             const selectedMode = document.getElementById('modeSelect').value;
 
             const toneGrid = document.getElementById('toneGrid');
             toneGrid.innerHTML = '';
+
+            const tones = [];
 
             // Check if mode-based generation is selected
             const modeRatios = getModeRatios(selectedMode);
@@ -1312,6 +1684,7 @@
                     // Skip if frequency is out of audible range
                     if (freq < 20 || freq > 4000) return;
 
+                    tones.push({ freq, ratio: interval.ratio, name: interval.name });
                     const button = document.createElement('button');
                     button.className = 'tone-button';
 
@@ -1474,6 +1847,7 @@
 
                     // Add interval name if it's a standard interval
                     const intervalName = getIntervalName(integerRatio);
+                    tones.push({ freq, ratio: integerRatio, name: intervalName || '' });
                     if (intervalName) {
                         const intervalDisplay = document.createElement('span');
                         intervalDisplay.className = 'interval-name';
@@ -1574,6 +1948,8 @@
                     buttonIndex++; // Increment after adding button to DOM
                 });
             }
+
+            generateDiadGrid(tones);
         }
 
         // Initialize audio button handler
@@ -1645,6 +2021,15 @@
                     const targetGain = settings.amplitude * masterAmplitude;
                     nodes.gainNode.gain.setValueAtTime(targetGain, audioContext.currentTime);
                 }
+            });
+
+            // Update all currently playing diad oscillators
+            activeDiadOscillators.forEach(nodesArray => {
+                nodesArray.forEach(({ gainNode }) => {
+                    if (gainNode) {
+                        gainNode.gain.setValueAtTime(masterAmplitude, audioContext.currentTime);
+                    }
+                });
             });
         });
 
@@ -2038,6 +2423,33 @@
 
         // Initialize MIDI on page load
         initMIDI();
+
+        // Display mode toggle
+        document.getElementById('tonesViewBtn').addEventListener('click', () => {
+            currentDisplayMode = 'tones';
+            document.getElementById('tonesViewBtn').classList.add('active');
+            document.getElementById('diadsViewBtn').classList.remove('active');
+            document.getElementById('toneGrid').style.display = '';
+            document.getElementById('diadGridWrapper').style.display = 'none';
+            document.getElementById('tonesDescription').style.display = '';
+            document.getElementById('diadsDescription').style.display = 'none';
+            if (audioContext) {
+                [...activeDiadOscillators.keys()].forEach(btn => stopDiad(btn));
+            }
+        });
+
+        document.getElementById('diadsViewBtn').addEventListener('click', () => {
+            currentDisplayMode = 'diads';
+            document.getElementById('diadsViewBtn').classList.add('active');
+            document.getElementById('tonesViewBtn').classList.remove('active');
+            document.getElementById('toneGrid').style.display = 'none';
+            document.getElementById('diadGridWrapper').style.display = '';
+            document.getElementById('tonesDescription').style.display = 'none';
+            document.getElementById('diadsDescription').style.display = '';
+            if (audioContext) {
+                [...activeOscillators.keys()].forEach(btn => stopTone(btn));
+            }
+        });
     </script>
 </body>
 </html>
